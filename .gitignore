@@ -53,6 +53,9 @@ gwt-unitCache/
 www-test/
 .gwt-tmp/
 
+
+build-logic/build
+
 ## TeaVM:
 # Not sure yet...
 
