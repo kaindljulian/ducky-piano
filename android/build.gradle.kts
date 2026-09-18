@@ -5,9 +5,6 @@ plugins {
     id("com.android.application")
 }
 
-val appName = extra["appName"]
-val gdxVersion = project.version
-
 val natives = configurations.create("natives")
 
 android {
