@@ -1,22 +1,21 @@
 pluginManagement {
     includeBuild("build-logic")
     repositories {
-        mavenCentral()
         gradlePluginPortal()
         google()
-        maven { url = uri("https://central.sonatype.com/repository/maven-snapshots/") }
+        mavenCentral()
     }
 }
 
 dependencyResolutionManagement {
-    @Suppress("UnstableApiUsage")
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
     repositories {
         mavenCentral()
-        maven { url = uri("https://central.sonatype.com/repository/maven-snapshots/") }
-        maven { url = uri("https://jitpack.io") }
         google()
     }
 }
+
+rootProject.name = "piano"
 
 include("android")
 include("core")

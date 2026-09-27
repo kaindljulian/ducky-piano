@@ -1,15 +1,12 @@
 plugins {
-    id("java-library")
-    id("piano.conventions")
-    id("asset-gen")
+    id("piano.java-conventions")
     application
 }
 
 val appName = providers.gradleProperty("appName").get()
 val projectVersion = providers.gradleProperty("projectVersion").get()
 
-
-sourceSets["main"].resources.srcDirs(rootProject.file("assets").path)
+sourceSets["main"].resources.srcDir(rootProject.file("assets"))
 
 application {
     mainClass = "com.github.kaindljulian.piano.lwjgl3.Lwjgl3Launcher"
@@ -17,10 +14,9 @@ application {
 }
 
 dependencies {
-    implementation(libs.gdxBackendLwjgl3)
-    implementation(libs.gdxPlatform)
-    implementation(variantOf(libs.gdxPlatform) { classifier("natives-desktop") })
     implementation(project(":core"))
+    implementation(libs.gdxBackendLwjgl3)
+    runtimeOnly(variantOf(libs.gdxPlatform) { classifier("natives-desktop") })
 }
 
 tasks.named<JavaExec>("run") {
@@ -29,7 +25,7 @@ tasks.named<JavaExec>("run") {
 }
 
 tasks.jar {
-    archiveFileName.set("$appName-$projectVersion.jar")
+    archiveFileName = "$appName-$projectVersion.jar"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     dependsOn(configurations.runtimeClasspath)
@@ -52,39 +48,10 @@ tasks.jar {
     }
 }
 
-tasks.register("jarLinux") {
-    description = "Builds a JAR that only includes the files needed to run on Linux"
-    dependsOn("jar")
-    group = "build"
-    val jar = tasks.getByName<Jar>("jar")
-    jar.archiveFileName.set("$appName-$projectVersion-linux.jar")
-    jar.exclude(
-        "windows/x86/**", "windows/x64/**", "macos/arm64/**", "macos/x64/**", "**/*.dll", "**/*.dylib",
-        "META-INF/INDEX.LIST", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/maven/**"
-    )
-}
-
-tasks.register("jarWin") {
-    description = "Builds a JAR that only includes the files needed to run on Windows"
-    dependsOn("jar")
-    group = "build"
-    val jar = tasks.getByName<Jar>("jar")
-    jar.archiveFileName.set("$appName-$projectVersion-win.jar")
-    jar.exclude(
-        "macos/arm64/**", "macos/x64/**", "linux/arm32/**", "linux/arm64/**", "linux/x64/**", "**/*.dylib", "**/*.so",
-        "META-INF/INDEX.LIST", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/maven/**"
-    )
-}
-
-distributions {
-    named("main") {
-        contents {
-            into("libs") {
-                val jarName = tasks.jar.get().outputs.files.singleFile.name
-                configurations.runtimeClasspath.get().files.filter { it.name != jarName }.forEach { file ->
-                    exclude(file.name)
-                }
-            }
-        }
+distributions.named("main") {
+    contents {
+        val bundledJar = "$appName-$projectVersion.jar"
+        // exclude dependendies they are already in the app jar above
+        exclude { it.file.name.endsWith(".jar") && it.file.name != bundledJar }
     }
 }

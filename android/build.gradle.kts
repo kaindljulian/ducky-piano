@@ -1,11 +1,32 @@
-import java.util.Properties
-
 plugins {
-    id("piano.conventions")
     id("com.android.application")
 }
 
-val natives = configurations.create("natives")
+val nativeLibsDirectory = layout.buildDirectory.dir("nativeLibs")
+
+val nativeAbis = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+
+val gdxNativesByAbi = nativeAbis.associateWith { abi ->
+    val declared = configurations.dependencyScope("gdxNatives-$abi")
+    configurations.resolvable("gdxNativesClasspath-$abi") {
+        extendsFrom(declared.get())
+    }
+}
+
+val extractNativeLibs = tasks.register<Sync>("extractNativeLibs") {
+    description = "Extracts the libGDX native libraries packaged into the APK."
+    into(nativeLibsDirectory)
+    gdxNativesByAbi.forEach { (abi, classpath) ->
+        from(zipTree(classpath.map { it.singleFile })) {
+            into(abi)
+            include("*.so")
+        }
+    }
+}
+
+tasks.matching { it.name.contains("merge") && it.name.contains("JniLibFolders") }.configureEach {
+    dependsOn(extractNativeLibs)
+}
 
 android {
     namespace = "com.github.kaindljulian.piano"
@@ -18,7 +39,7 @@ android {
             renderscript.setSrcDirs(listOf("src/main/java"))
             res.setSrcDirs(listOf("res"))
             assets.setSrcDirs(listOf("../assets"))
-            jniLibs.setSrcDirs(listOf("libs"))
+            jniLibs.setSrcDirs(listOf(nativeLibsDirectory.get().asFile))
         }
     }
     packaging {
@@ -46,6 +67,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+        encoding = "UTF-8"
         isCoreLibraryDesugaringEnabled = true
     }
     buildTypes {
@@ -56,59 +78,19 @@ android {
     }
 }
 
-
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
-    implementation(libs.gdxBackendAndroid)
+    coreLibraryDesugaring(libs.desugarJdkLibs)
     implementation(project(":core"))
-    natives(libs.gdxPlatform)
-}
-
-tasks.register("copyAndroidNatives") {
-    description = "Extract natives into libs/ folders to package with APK"
-    doFirst {
-        file("libs/armeabi-v7a/").mkdirs()
-        file("libs/arm64-v8a/").mkdirs()
-        file("libs/x86_64/").mkdirs()
-        file("libs/x86/").mkdirs()
-
-        configurations.getByName("natives").copy().files.forEach { jar ->
-            val outputDir: File? = when {
-                jar.name.endsWith("natives-armeabi-v7a.jar") -> file("libs/armeabi-v7a")
-                jar.name.endsWith("natives-arm64-v8a.jar") -> file("libs/arm64-v8a")
-                jar.name.endsWith("natives-x86_64.jar") -> file("libs/x86_64")
-                jar.name.endsWith("natives-x86.jar") -> file("libs/x86")
-                else -> null
-            }
-            if (outputDir != null) {
-                copy {
-                    from(zipTree(jar))
-                    into(outputDir)
-                    include("*.so")
-                }
-            }
-        }
+    implementation(libs.gdxBackendAndroid)
+    nativeAbis.forEach { abi ->
+        addProvider("gdxNatives-$abi", variantOf(libs.gdxPlatform) { classifier("natives-$abi") })
     }
-}
-
-tasks.matching { it.name.contains("merge") && it.name.contains("JniLibFolders") }.configureEach {
-    dependsOn("copyAndroidNatives")
 }
 
 tasks.register<Exec>("run") {
-    val localProperties = project.file("../local.properties")
-
-    val path = if (localProperties.exists()) {
-        val properties = Properties()
-        localProperties.inputStream().use { properties.load(it) }
-        properties.getProperty("sdk.dir") ?: System.getenv("ANDROID_SDK_ROOT")
-    } else {
-        System.getenv("ANDROID_SDK_ROOT")
-    }
-
-    val adb = "$path/platform-tools/adb"
+    description = "Starts the installed app on the connected device."
     commandLine(
-        adb,
+        android.sdkDirectory.resolve("platform-tools/adb").absolutePath,
         "shell",
         "am",
         "start",

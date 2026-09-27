@@ -1,6 +1,6 @@
 plugins {
     id("java-library")
-    id("asset-gen")
+    id("piano.java-conventions")
 }
 
 dependencies {

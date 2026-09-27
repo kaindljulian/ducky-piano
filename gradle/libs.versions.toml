@@ -1,14 +1,13 @@
 [versions]
 agp = "8.9.3"
 gdx = "1.14.2"
-lwjgl3 = "3.4.3"
 
 [libraries]
+desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version = "2.1.5" }
 gdxBackendAndroid = { module = "com.badlogicgames.gdx:gdx-backend-android", version.ref = "gdx" }
 gdxBackendLwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
 gdxCore = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
 gdxPlatform = { module = "com.badlogicgames.gdx:gdx-platform", version.ref = "gdx" }
-lwjglBom = { module = "org.lwjgl:lwjgl-bom", version.ref = "lwjgl3" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

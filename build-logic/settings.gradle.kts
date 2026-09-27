@@ -1,10 +1,8 @@
 rootProject.name = "build-logic"
 
 dependencyResolutionManagement {
-    @Suppress("UnstableApiUsage")
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
     repositories {
         mavenCentral()
-        maven { url = uri("https://central.sonatype.com/repository/maven-snapshots/") }
-        maven { url = uri("https://jitpack.io") }
     }
 }
