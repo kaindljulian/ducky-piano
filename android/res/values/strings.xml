@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name">Piano106</string>
+  <string name="capture_channel_name">Audio capture</string>
+  <string name="capture_notification_title">Listening to audio from other apps</string>
 </resources>
