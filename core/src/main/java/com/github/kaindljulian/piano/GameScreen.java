@@ -92,7 +92,7 @@ public class GameScreen extends ScreenAdapter {
     @Override
     public void render(float delta) {
         if (!menu.isVisible()) {
-            board.update(delta);
+            if (game.musicPlaying.getAsBoolean()) board.update(delta);
             if (board.getState() == Board.State.OVER) openMenu("Game over", false);
         }
         renderer.render(board, boardViewport);
