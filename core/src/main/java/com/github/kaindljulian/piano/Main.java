@@ -4,21 +4,15 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-
-import java.util.function.BooleanSupplier;
+import com.github.kaindljulian.piano.audio.MusicAnalyzer;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends Game {
-    /** Whether music is playing. The tiles only move while it is. */
-    final BooleanSupplier musicPlaying;
+    final MusicAnalyzer music;
     Skin skin;
 
-    public Main() {
-        this(() -> true);
-    }
-
-    public Main(BooleanSupplier musicPlaying) {
-        this.musicPlaying = musicPlaying;
+    public Main(MusicAnalyzer music) {
+        this.music = music;
     }
 
     @Override

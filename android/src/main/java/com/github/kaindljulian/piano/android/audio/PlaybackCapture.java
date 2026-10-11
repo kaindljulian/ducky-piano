@@ -17,6 +17,9 @@ import com.github.kaindljulian.piano.audio.AudioCapture;
  */
 @TargetApi(Build.VERSION_CODES.Q)
 public class PlaybackCapture implements AudioCapture {
+    public static final int DEFAULT_SAMPLE_RATE = 44100;
+    public static final int DEFAULT_CHANNEL_COUNT = 2;
+
     private final AudioRecord record;
     private final int sampleRate;
     private final int channelCount;
@@ -26,7 +29,7 @@ public class PlaybackCapture implements AudioCapture {
      * Captures stereo audio at 44.1 kHz from apps playing media, games or audio of unknown usage.
      */
     public PlaybackCapture(MediaProjection projection) {
-        this(projection, 44100, 2,
+        this(projection, DEFAULT_SAMPLE_RATE, DEFAULT_CHANNEL_COUNT,
             AudioAttributes.USAGE_MEDIA, AudioAttributes.USAGE_GAME, AudioAttributes.USAGE_UNKNOWN);
     }
 

@@ -13,14 +13,15 @@ import com.github.kaindljulian.piano.Main;
 import com.github.kaindljulian.piano.android.audio.PlaybackCapture;
 import com.github.kaindljulian.piano.android.audio.PlaybackCaptureRequest;
 import com.github.kaindljulian.piano.audio.AudioCaptureReader;
-import com.github.kaindljulian.piano.audio.SoundDetector;
+import com.github.kaindljulian.piano.audio.MusicAnalyzer;
 
 /** Launches the Android application. */
 @TargetApi(Build.VERSION_CODES.Q)
 public class AndroidLauncher extends AndroidApplication {
     private static final int RECORD_AUDIO_REQUEST = 1;
 
-    private final SoundDetector detector = new SoundDetector();
+    private final MusicAnalyzer music =
+        new MusicAnalyzer(PlaybackCapture.DEFAULT_SAMPLE_RATE, PlaybackCapture.DEFAULT_CHANNEL_COUNT);
     private MediaProjection projection;
     private AudioCaptureReader reader;
 
@@ -29,7 +30,7 @@ public class AndroidLauncher extends AndroidApplication {
         super.onCreate(savedInstanceState);
         AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
         configuration.useImmersiveMode = true; // Recommended, but not required.
-        initialize(new Main(detector::isPlaying), configuration);
+        initialize(new Main(music), configuration);
 
         requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, RECORD_AUDIO_REQUEST);
     }
@@ -49,7 +50,7 @@ public class AndroidLauncher extends AndroidApplication {
             @Override
             public void onGranted(MediaProjection granted) {
                 projection = granted;
-                reader = new AudioCaptureReader(new PlaybackCapture(granted), 2048, detector);
+                reader = new AudioCaptureReader(new PlaybackCapture(granted), 2048, music);
             }
 
             @Override

@@ -13,11 +13,13 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.github.kaindljulian.piano.audio.Beat;
+import com.github.kaindljulian.piano.audio.BeatClock;
+import com.github.kaindljulian.piano.audio.ChartGenerator;
 
 public class GameScreen extends ScreenAdapter {
-    private static final int LANES = 4;
+    private static final int LANES = ChartGenerator.LANES;
     private static final int VISIBLE_ROWS = 4;
-    private static final float ROWS_PER_SECOND = 3f;
 
     private final Main game;
     private final Viewport boardViewport = new StretchViewport(LANES, VISIBLE_ROWS);
@@ -25,11 +27,17 @@ public class GameScreen extends ScreenAdapter {
     private final Stage stage = Ui.createStage();
     private final TextButton pauseButton;
     private final Table menu = new Table();
+    private final Label listening;
+    private final Label bpm;
     private final Vector2 touch = new Vector2();
-    private Board board = newBoard();
+    private final BeatClock clock = new BeatClock();
+    private final ChartGenerator chart;
+    private Board board;
 
     GameScreen(Main game) {
         this.game = game;
+        chart = new ChartGenerator(game.music);
+        board = newBoard();
         Skin skin = game.skin;
 
         pauseButton = new TextButton("II", skin);
@@ -37,8 +45,17 @@ public class GameScreen extends ScreenAdapter {
         Table hud = new Table();
         hud.setFillParent(true);
         hud.top().left().pad(8);
+        Label.LabelStyle hint = new Label.LabelStyle(skin.getFont("default"), Color.GRAY);
         hud.add(pauseButton).size(56);
+        bpm = new Label("", hint);
+        hud.add(bpm).expandX().right().top().padRight(8);
         stage.addActor(hud);
+
+        listening = new Label("Listening...", hint);
+        Table center = new Table();
+        center.setFillParent(true);
+        center.add(listening);
+        stage.addActor(center);
 
         menu.setFillParent(true);
         menu.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.7f)));
@@ -46,8 +63,8 @@ public class GameScreen extends ScreenAdapter {
         stage.addActor(menu);
     }
 
-    private static Board newBoard() {
-        return Board.random(LANES, VISIBLE_ROWS, ROWS_PER_SECOND);
+    private Board newBoard() {
+        return new Board(LANES, VISIBLE_ROWS, chart::lane);
     }
 
     private void openMenu(String title, boolean resumable) {
@@ -71,6 +88,7 @@ public class GameScreen extends ScreenAdapter {
     }
 
     private void closeMenu() {
+        board.resync();
         menu.setVisible(false);
         pauseButton.setVisible(true);
     }
@@ -91,10 +109,17 @@ public class GameScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
+        Beat beat = game.music.latestBeat();
         if (!menu.isVisible()) {
-            if (game.musicPlaying.getAsBoolean()) board.update(delta);
+            if (beat != null) {
+                board.update(clock.update(beat, System.nanoTime()));
+            } else if (board.getState() == Board.State.RUNNING) {
+                openMenu("Paused", true);
+            }
             if (board.getState() == Board.State.OVER) openMenu("Game over", false);
         }
+        listening.setVisible(beat == null && !menu.isVisible());
+        bpm.setText(beat == null ? "" : Math.round(60e9 / beat.periodNanos()) + " BPM");
         renderer.render(board, boardViewport);
 
         stage.getViewport().apply();

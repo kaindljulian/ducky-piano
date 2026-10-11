@@ -3,39 +3,41 @@ package com.github.kaindljulian.piano;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
-import java.util.function.IntSupplier;
+import java.util.function.DoubleToIntFunction;
 
 
+/** A grid of tiles with one row per beat. */
 public class Board {
     public enum State { READY, RUNNING, OVER }
 
     public final int lanes;
     public final int visibleRows;
-    private final float rowsPerSecond;
-    private final IntSupplier nextLane;
+    private final DoubleToIntFunction laneForBeatsAhead;
 
     /** Ordered by row, lowest first. */
     private final Array<Tile> tiles = new Array<>();
     private int nextRow;
     private float scroll;
+    private double origin;
+    private boolean aligned;
     private State state = State.READY;
     private Tile failed;
 
-    public Board(int lanes, int visibleRows, float rowsPerSecond, IntSupplier nextLane) {
+    public Board(int lanes, int visibleRows, DoubleToIntFunction laneForBeatsAhead) {
         this.lanes = lanes;
         this.visibleRows = visibleRows;
-        this.rowsPerSecond = rowsPerSecond;
-        this.nextLane = nextLane;
+        this.laneForBeatsAhead = laneForBeatsAhead;
         spawn();
     }
 
-    public static Board random(int lanes, int visibleRows, float rowsPerSecond) {
-        return new Board(lanes, visibleRows, rowsPerSecond, () -> MathUtils.random(lanes - 1));
-    }
-
-    public void update(float delta) {
+    /** Scrolls to a beat count whose whole numbers fall on beats, so each row lands at the bottom on a beat. */
+    public void update(double beats) {
         if (state != State.RUNNING) return;
-        scroll += rowsPerSecond * delta;
+        if (!aligned) {
+            origin = Math.round(beats - scroll);
+            aligned = true;
+        }
+        scroll = (float) (beats - origin);
 
         Tile next = nextTile();
         if (next != null && next.row + 1 < scroll) {
@@ -46,6 +48,11 @@ public class Board {
             tiles.removeIndex(0);
         }
         spawn();
+    }
+
+    /** Lines the rows up with the beat count again on the next update, e.g. after a pause. */
+    public void resync() {
+        aligned = false;
     }
 
     /** Handles a tap at a position in cell coordinates relative to the screen bottom. */
@@ -103,7 +110,7 @@ public class Board {
     /** Keeps the board filled one row past the top edge, so tiles never pop in on screen. */
     private void spawn() {
         while (nextRow <= scroll + visibleRows) {
-            tiles.add(new Tile(nextLane.getAsInt(), nextRow++));
+            tiles.add(new Tile(laneForBeatsAhead.applyAsInt(nextRow - scroll), nextRow++));
         }
     }
 }

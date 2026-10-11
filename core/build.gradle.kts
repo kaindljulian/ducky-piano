@@ -6,4 +6,10 @@ plugins {
 dependencies {
     api(libs.gdxCore)
     api(libs.gdxFreetype)
+    testImplementation(libs.junitJupiter)
+    testRuntimeOnly(libs.junitPlatformLauncher)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
