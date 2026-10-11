@@ -7,27 +7,42 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
     private static final float SILENCE_SECONDS = 1;
     private static final int HISTORY = 1024;
 
+    private final int sampleRate;
     private final int channelCount;
     private final double nanosPerSample;
-    private final OnsetDetector onsets;
-    private final TempoEstimator tempo;
-    private final BeatTracker tracker = new BeatTracker();
+    private final float framesPerSecond;
     private final int silentFramesForSilence;
     private final float[][] bandFlux = new float[HISTORY][OnsetDetector.BANDS];
+    private OnsetDetector onsets;
+    private TempoEstimator tempo;
+    private BeatTracker tracker;
     private long samples;
     private long frames;
-    private long anchorNanos = Long.MAX_VALUE;
+    private long anchorNanos;
     private int silentFrames;
     private int beatsSinceSilence;
     private volatile Beat latestBeat;
 
     public MusicAnalyzer(int sampleRate, int channelCount) {
+        this.sampleRate = sampleRate;
         this.channelCount = channelCount;
         nanosPerSample = 1e9 / sampleRate;
-        onsets = new OnsetDetector(sampleRate);
-        float framesPerSecond = (float) sampleRate / OnsetDetector.HOP;
-        tempo = new TempoEstimator(framesPerSecond);
+        framesPerSecond = (float) sampleRate / OnsetDetector.HOP;
         silentFramesForSilence = Math.round(SILENCE_SECONDS * framesPerSecond);
+        reset();
+    }
+
+    /** Forgets everything heard so far. Call it before feeding a new stream, while nothing is feeding this one. */
+    public synchronized void reset() {
+        onsets = new OnsetDetector(sampleRate);
+        tempo = new TempoEstimator(framesPerSecond);
+        tracker = new BeatTracker();
+        samples = 0;
+        frames = 0;
+        anchorNanos = Long.MAX_VALUE;
+        silentFrames = 0;
+        beatsSinceSilence = 0;
+        latestBeat = null;
     }
 
     @Override

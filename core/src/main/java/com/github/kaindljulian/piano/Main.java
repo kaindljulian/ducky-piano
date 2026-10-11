@@ -9,10 +9,14 @@ import com.github.kaindljulian.piano.audio.MusicAnalyzer;
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends Game {
     final MusicAnalyzer music;
+    /** Lets the player pick what to capture again, or null where there's no choice. */
+    final Runnable selectAudioSource;
+    float tilesPerBeat = 1;
     Skin skin;
 
-    public Main(MusicAnalyzer music) {
+    public Main(MusicAnalyzer music, Runnable selectAudioSource) {
         this.music = music;
+        this.selectAudioSource = selectAudioSource;
     }
 
     @Override

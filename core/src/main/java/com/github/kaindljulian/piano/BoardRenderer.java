@@ -10,6 +10,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 public class BoardRenderer implements Disposable {
     private static final float GAP = 0f;
     private static final Color TAPPED = new Color(0.85f, 0.85f, 0.85f, 1f);
+    private static final Color MISSED = new Color(1f, 0.6f, 0.6f, 1f);
     private static final Color LINE = new Color(0.7f, 0.7f, 0.7f, 1f);
 
     private final ShapeRenderer shapes = new ShapeRenderer();
@@ -21,24 +22,24 @@ public class BoardRenderer implements Disposable {
 
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         for (Tile tile : board.getTiles()) {
-            drawTile(board, tile, tile.isTapped() ? TAPPED : Color.BLACK);
+            drawTile(board, tile, tile.isTapped() ? TAPPED : tile.isMissed() ? MISSED : Color.BLACK);
         }
-        if (board.getFailed() != null) {
-            drawTile(board, board.getFailed(), Color.RED);
+        if (board.getWrongTap() != null) {
+            drawTile(board, board.getWrongTap(), Color.RED);
         }
         shapes.end();
 
         shapes.begin(ShapeRenderer.ShapeType.Line);
         shapes.setColor(LINE);
         for (int lane = 1; lane < board.lanes; lane++) {
-            shapes.line(lane, 0, lane, board.visibleRows);
+            shapes.line(lane, 0, lane, board.visibleCells);
         }
         shapes.end();
     }
 
     private void drawTile(Board board, Tile tile, Color color) {
         shapes.setColor(color);
-        float y = tile.row - board.getScroll();
+        float y = (tile.start - board.getScroll()) * board.getCellsPerBeat();
         shapes.rect(tile.lane + GAP, y + GAP, 1 - 2 * GAP, 1 - 2 * GAP);
     }
 

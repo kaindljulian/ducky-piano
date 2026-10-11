@@ -3,34 +3,42 @@ package com.github.kaindljulian.piano;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
-import java.util.function.DoubleToIntFunction;
 
-
-/** A grid of tiles with one row per beat. */
+/**
+ * Tiles on a beat grid. Each beat holds one or more tiles that split it evenly. Every tile is one cell tall and
+ * the board scrolls {@link #getCellsPerBeat()} cells per beat, so more tiles per beat means faster scrolling.
+ */
 public class Board {
-    public enum State { READY, RUNNING, OVER }
+    public enum State { READY, RUNNING }
+
+    public interface Chart {
+        /** The lanes of the tiles that split the beat {@code beatsAhead} beats from now, in order. */
+        int[] lanes(double beatsAhead);
+    }
 
     public final int lanes;
-    public final int visibleRows;
-    private final DoubleToIntFunction laneForBeatsAhead;
+    public final int visibleCells;
+    private final Chart chart;
 
-    /** Ordered by row, lowest first. */
+    /** Ordered by start, earliest first. */
     private final Array<Tile> tiles = new Array<>();
-    private int nextRow;
+    private int nextBeat;
     private float scroll;
     private double origin;
     private boolean aligned;
     private State state = State.READY;
-    private Tile failed;
+    private int combo;
+    private Tile wrongTap;
+    private float cellsPerBeat = 1;
 
-    public Board(int lanes, int visibleRows, DoubleToIntFunction laneForBeatsAhead) {
+    public Board(int lanes, int visibleCells, Chart chart) {
         this.lanes = lanes;
-        this.visibleRows = visibleRows;
-        this.laneForBeatsAhead = laneForBeatsAhead;
+        this.visibleCells = visibleCells;
+        this.chart = chart;
         spawn();
     }
 
-    /** Scrolls to a beat count whose whole numbers fall on beats, so each row lands at the bottom on a beat. */
+    /** Scrolls to a beat count whose whole numbers fall on beats, so each beat reaches the bottom on time. */
     public void update(double beats) {
         if (state != State.RUNNING) return;
         if (!aligned) {
@@ -39,42 +47,68 @@ public class Board {
         }
         scroll = (float) (beats - origin);
 
-        Tile next = nextTile();
-        if (next != null && next.row + 1 < scroll) {
-            fail(next);
-            return;
+        while (tiles.notEmpty() && end(tiles.first()) < scroll) {
+            Tile gone = tiles.removeIndex(0);
+            if (!gone.tapped && !gone.missed) {
+                combo = 0;
+            }
         }
-        while (tiles.notEmpty() && tiles.first().tapped && tiles.first().row + 1 < scroll) {
-            tiles.removeIndex(0);
+        if (wrongTap != null && end(wrongTap) < scroll) {
+            wrongTap = null;
         }
         spawn();
     }
 
-    /** Lines the rows up with the beat count again on the next update, e.g. after a pause. */
+    /** Lines the beats up with the beat count again on the next update, e.g. after a pause. */
     public void resync() {
         aligned = false;
     }
 
-    /** Handles a tap at a position in cell coordinates relative to the screen bottom. */
+    /**
+     * Handles a tap at a position in cell coordinates relative to the screen bottom. Any open tile can be hit.
+     * Open tiles before it count as missed.
+     */
     public void tap(float x, float y) {
-        if (state == State.OVER || x < 0 || x >= lanes) return;
+        if (x < 0 || x >= lanes) return;
         int lane = (int) x;
-        int row = MathUtils.floor(y + scroll);
+        float position = scroll + y / cellsPerBeat;
 
-        Tile hit = tileAt(lane, row);
+        Tile hit = tileAt(lane, position);
         if (hit == null) {
-            if (state == State.RUNNING) fail(new Tile(lane, row));
-        } else if (hit == nextTile()) {
-            hit.tapped = true;
-            state = State.RUNNING;
+            if (state == State.RUNNING) {
+                combo = 0;
+                int slotsPerBeat = MathUtils.ceil(cellsPerBeat);
+                wrongTap = new Tile(lane, (float) MathUtils.floor(position * slotsPerBeat) / slotsPerBeat);
+            }
+            return;
         }
+        if (hit.tapped || hit.missed) return;
+
+        for (Tile tile : tiles) {
+            if (tile == hit) break;
+            if (!tile.tapped && !tile.missed) {
+                tile.missed = true;
+                combo = 0;
+            }
+        }
+        hit.tapped = true;
+        combo++;
+        state = State.RUNNING;
     }
 
     public Array<Tile> getTiles() {
         return tiles;
     }
 
-    /** How many rows the board has scrolled so far. A tile is drawn at {@code row - scroll}. */
+    public void setCellsPerBeat(float cellsPerBeat) {
+        this.cellsPerBeat = cellsPerBeat;
+    }
+
+    public float getCellsPerBeat() {
+        return cellsPerBeat;
+    }
+
+    /** How many beats the board has scrolled so far. A tile is drawn {@code start - scroll} beats up. */
     public float getScroll() {
         return scroll;
     }
@@ -83,34 +117,35 @@ public class Board {
         return state;
     }
 
-    /** The tile that ended the game: a missed tile or the empty cell the player tapped. */
-    public Tile getFailed() {
-        return failed;
+    /** Hits in a row since the last missed tile or tap on an empty cell. */
+    public int getCombo() {
+        return combo;
     }
 
-    private void fail(Tile tile) {
-        failed = tile;
-        state = State.OVER;
+    /** The empty cell the player last tapped, until it scrolls off. */
+    public Tile getWrongTap() {
+        return wrongTap;
     }
 
-    private Tile nextTile() {
+    private Tile tileAt(int lane, float position) {
         for (Tile tile : tiles) {
-            if (!tile.tapped) return tile;
+            if (tile.lane == lane && tile.start <= position && position < end(tile)) return tile;
         }
         return null;
     }
 
-    private Tile tileAt(int lane, int row) {
-        for (Tile tile : tiles) {
-            if (tile.lane == lane && tile.row == row) return tile;
-        }
-        return null;
+    private float end(Tile tile) {
+        return tile.start + 1 / cellsPerBeat;
     }
 
-    /** Keeps the board filled one row past the top edge, so tiles never pop in on screen. */
+    /** Keeps the board filled one beat past the top edge, so tiles never pop in on screen. */
     private void spawn() {
-        while (nextRow <= scroll + visibleRows) {
-            tiles.add(new Tile(laneForBeatsAhead.applyAsInt(nextRow - scroll), nextRow++));
+        while (nextBeat <= scroll + visibleCells / cellsPerBeat) {
+            int[] beatLanes = chart.lanes(nextBeat - scroll);
+            for (int i = 0; i < beatLanes.length; i++) {
+                tiles.add(new Tile(beatLanes[i], nextBeat + (float) i / beatLanes.length));
+            }
+            nextBeat++;
         }
     }
 }

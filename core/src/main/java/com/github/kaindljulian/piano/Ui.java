@@ -10,8 +10,10 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 /**
@@ -65,6 +67,13 @@ final class Ui {
         button.down = skin.newDrawable("white", Color.GRAY);
         button.font = font;
         skin.add("default", button);
+
+        Drawable bar = skin.newDrawable("white", Color.GRAY);
+        bar.setMinHeight(6);
+        Drawable knob = skin.newDrawable("white", Color.WHITE);
+        knob.setMinWidth(28);
+        knob.setMinHeight(28);
+        skin.add("default-horizontal", new Slider.SliderStyle(bar, knob));
 
         return skin;
     }

@@ -8,6 +8,7 @@ import android.media.AudioPlaybackCaptureConfiguration;
 import android.media.AudioRecord;
 import android.media.projection.MediaProjection;
 import android.os.Build;
+import android.os.Process;
 
 import com.github.kaindljulian.piano.audio.AudioCapture;
 
@@ -56,6 +57,7 @@ public class PlaybackCapture implements AudioCapture {
         for (int usage : usages) {
             config.addMatchingUsage(usage);
         }
+        config.excludeUid(Process.myUid());
 
         int channelMask = channelCount == 1 ? AudioFormat.CHANNEL_IN_MONO : AudioFormat.CHANNEL_IN_STEREO;
 

@@ -30,9 +30,31 @@ public class AndroidLauncher extends AndroidApplication {
         super.onCreate(savedInstanceState);
         AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
         configuration.useImmersiveMode = true; // Recommended, but not required.
-        initialize(new Main(music), configuration);
+        initialize(new Main(music, this::selectAudioSource), configuration);
+        requestAudioPermission();
+    }
 
+    private void requestAudioPermission() {
         requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, RECORD_AUDIO_REQUEST);
+    }
+
+    private void selectAudioSource() {
+        runOnUiThread(() -> {
+            stopCapture();
+            music.reset();
+            requestAudioPermission();
+        });
+    }
+
+    private void stopCapture() {
+        if (reader != null) {
+            reader.close();
+            reader = null;
+        }
+        if (projection != null) {
+            projection.stop();
+            projection = null;
+        }
     }
 
     @Override
@@ -61,12 +83,7 @@ public class AndroidLauncher extends AndroidApplication {
 
     @Override
     protected void onDestroy() {
-        if (reader != null) {
-            reader.close();
-        }
-        if (projection != null) {
-            projection.stop();
-        }
+        stopCapture();
         super.onDestroy();
     }
 }

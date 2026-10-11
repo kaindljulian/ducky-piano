@@ -23,7 +23,7 @@ public class Lwjgl3Launcher {
     }
 
     private static Lwjgl3Application createApplication(MusicAnalyzer music) {
-        return new Lwjgl3Application(new Main(music), getDefaultConfiguration());
+        return new Lwjgl3Application(new Main(music, null), getDefaultConfiguration());
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {

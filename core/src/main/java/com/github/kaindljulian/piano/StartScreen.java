@@ -19,7 +19,12 @@ public class StartScreen extends ScreenAdapter {
         Table root = new Table();
         root.setFillParent(true);
         root.add(new Label("Piano Tiles", game.skin)).padBottom(48).row();
-        root.add(play).size(200, 60);
+        root.add(play).size(200, 60).row();
+        if (game.selectAudioSource != null) {
+            TextButton source = new TextButton("Select audio source", game.skin);
+            Ui.onClick(source, game.selectAudioSource);
+            root.add(source).size(280, 60).padTop(16);
+        }
         stage.addActor(root);
     }
 
