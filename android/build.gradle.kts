@@ -19,9 +19,11 @@ val extractNativeLibs = tasks.register<Sync>("extractNativeLibs") {
     description = "Extracts the libGDX native libraries packaged into the APK."
     into(nativeLibsDirectory)
     gdxNativesByAbi.forEach { (abi, classpath) ->
-        from(zipTree(classpath.map { it.singleFile })) {
-            into(abi)
-            include("*.so")
+        classpath.get().forEach { jar ->
+            from(zipTree(jar)) {
+                into(abi)
+                include("*.so")
+            }
         }
     }
 }
@@ -86,6 +88,7 @@ dependencies {
     implementation(libs.gdxBackendAndroid)
     nativeAbis.forEach { abi ->
         addProvider("gdxNatives-$abi", variantOf(libs.gdxPlatform) { classifier("natives-$abi") })
+        addProvider("gdxNatives-$abi", variantOf(libs.gdxFreetypePlatform) { classifier("natives-$abi") })
     }
 }
 

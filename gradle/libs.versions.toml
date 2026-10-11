@@ -7,6 +7,8 @@ desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version = "2.1
 gdxBackendAndroid = { module = "com.badlogicgames.gdx:gdx-backend-android", version.ref = "gdx" }
 gdxBackendLwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
 gdxCore = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
+gdxFreetype = { module = "com.badlogicgames.gdx:gdx-freetype", version.ref = "gdx" }
+gdxFreetypePlatform = { module = "com.badlogicgames.gdx:gdx-freetype-platform", version.ref = "gdx" }
 gdxPlatform = { module = "com.badlogicgames.gdx:gdx-platform", version.ref = "gdx" }
 
 [plugins]

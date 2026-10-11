@@ -5,4 +5,5 @@ plugins {
 
 dependencies {
     api(libs.gdxCore)
+    api(libs.gdxFreetype)
 }

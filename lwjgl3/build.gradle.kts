@@ -17,6 +17,7 @@ dependencies {
     implementation(project(":core"))
     implementation(libs.gdxBackendLwjgl3)
     runtimeOnly(variantOf(libs.gdxPlatform) { classifier("natives-desktop") })
+    runtimeOnly(variantOf(libs.gdxFreetypePlatform) { classifier("natives-desktop") })
 }
 
 tasks.named<JavaExec>("run") {
