@@ -1,4 +1,4 @@
-# Piano106
+# Ducky Piano
 
 A simplified version of a [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
 

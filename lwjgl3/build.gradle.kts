@@ -25,6 +25,13 @@ tasks.named<JavaExec>("run") {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
+tasks.register<JavaExec>("exportIcons") {
+    description = "Draws the Android and desktop app icons from the duck mascot."
+    mainClass = "com.github.kaindljulian.piano.lwjgl3.IconExporter"
+    classpath = sourceSets["main"].runtimeClasspath
+    workingDir = rootDir
+}
+
 tasks.jar {
     archiveFileName = "$appName-$projectVersion.jar"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

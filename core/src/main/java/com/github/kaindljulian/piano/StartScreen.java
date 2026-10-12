@@ -5,13 +5,18 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 
 public class StartScreen extends ScreenAdapter {
     private static final int HEART_PIXELS = 64;
+    /** How long the logo takes to bob up, and again to bob down. */
+    private static final float LOGO_BOB_SECONDS = 1.4f;
 
     private final Stage stage = Ui.createStage();
     private final ShapeRenderer shapes = new ShapeRenderer();
@@ -20,16 +25,22 @@ public class StartScreen extends ScreenAdapter {
     private final Texture heart = Ui.texture(HEART_PIXELS, StartScreen::inHeart);
 
     StartScreen(Main game) {
+        Stack logo = Ui.duck(game.skin);
+        logo.addAction(Actions.forever(Actions.sequence(
+            Actions.moveBy(0, Sizes.LOGO_BOB, LOGO_BOB_SECONDS, Interpolation.sine),
+            Actions.moveBy(0, -Sizes.LOGO_BOB, LOGO_BOB_SECONDS, Interpolation.sine))));
+
         Table title = new Table();
-        title.add(Ui.label(game.skin, "Piano", Colors.TEXT, Sizes.TEXT_LARGE)).padRight(12);
-        title.add(Ui.label(game.skin, "106", Colors.ACCENT, Sizes.TEXT_LARGE));
+        title.add(Ui.label(game.skin, "Ducky", Colors.ACCENT, Sizes.TEXT_LARGE)).padRight(12);
+        title.add(Ui.label(game.skin, "Piano", Colors.TEXT, Sizes.TEXT_LARGE));
 
         TextButton play = new TextButton("Play", game.skin, "accent");
         Ui.onClick(play, () -> game.switchTo(new GameScreen(game)));
 
         Table root = new Table();
         root.setFillParent(true);
-        root.add(title).padBottom(56).row();
+        root.add(logo).size(Sizes.LOGO).row();
+        root.add(title).padBottom(48).row();
         root.add(play).size(Sizes.MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).row();
         if (game.selectAudioSource != null) {
             TextButton source = new TextButton("Audio Source", game.skin);

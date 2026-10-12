@@ -9,9 +9,11 @@ import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
+import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
@@ -29,6 +31,7 @@ final class Ui {
     private static final int CIRCLE_PIXELS = 128;
     /** The circle a rounded bar is stretched from. Small, so its ends stay smooth when scaled down. */
     private static final int PILL_PIXELS = 32;
+    private static final int DUCK_PIXELS = 256;
 
     /** A shape for {@link #texture}, given coordinates from -1 to 1 across the texture with y pointing up. */
     interface Shape {
@@ -48,6 +51,9 @@ final class Ui {
         pixmap.dispose();
         skin.add("circle", texture(CIRCLE_PIXELS, Ui::inCircle));
         skin.add("pill", texture(PILL_PIXELS, Ui::inCircle));
+        for (Duck.Part part : Duck.Part.values()) {
+            skin.add(duckTexture(part), texture(DUCK_PIXELS, part::contains));
+        }
 
         // The viewport scales virtual pixels up to the screen, by about 3x on phones. The glyphs are
         // rasterized well above that and shrunk with mipmaps, so text stays sharp at any window size.
@@ -79,6 +85,7 @@ final class Ui {
         TextButton.TextButtonStyle accent = new TextButton.TextButtonStyle(button);
         accent.up = skin.newDrawable("white", Colors.ACCENT);
         accent.down = skin.newDrawable("white", Colors.ACCENT_DOWN);
+        accent.fontColor = Colors.ACCENT_TEXT;
         skin.add("accent", accent);
 
         Slider.SliderStyle slider = new Slider.SliderStyle(bar(skin, Colors.BUTTON), circle(skin, Colors.KNOB, Sizes.KNOB));
@@ -135,6 +142,21 @@ final class Ui {
 
     private static boolean inCircle(float x, float y) {
         return x * x + y * y <= 1;
+    }
+
+    /** The duck mascot, its layers stacked as images. */
+    static Stack duck(Skin skin) {
+        Stack duck = new Stack();
+        for (Duck.Part part : Duck.Part.values()) {
+            Image layer = new Image(skin.get(duckTexture(part), Texture.class));
+            layer.setColor(part.color);
+            duck.add(layer);
+        }
+        return duck;
+    }
+
+    private static String duckTexture(Duck.Part part) {
+        return "duck-" + part.name().toLowerCase();
     }
 
     /** A label in the skin's font, tinted and scaled relative to the normal text size. */

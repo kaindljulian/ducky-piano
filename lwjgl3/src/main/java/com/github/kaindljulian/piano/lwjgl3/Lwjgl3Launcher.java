@@ -28,12 +28,12 @@ public class Lwjgl3Launcher {
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
         Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
-        configuration.setTitle("Piano106");
+        configuration.setTitle("Ducky Piano");
         configuration.useVsync(false);
         configuration.setForegroundFPS(Lwjgl3ApplicationConfiguration.getDisplayMode().refreshRate + 1);
 
         configuration.setWindowedMode(405, 720);
-        configuration.setWindowIcon("libgdx128.png", "libgdx64.png", "libgdx32.png", "libgdx16.png");
+        configuration.setWindowIcon("icon128.png", "icon64.png", "icon32.png", "icon16.png");
 
         return configuration;
     }

@@ -27,6 +27,9 @@ final class Sizes {
     static final float COMBO_WIDTH = 240;
     static final float COMBO_HEIGHT = 90;
     static final float HEART = 14;
+    static final float LOGO = 150;
+    /** How far the logo bobs up and down. */
+    static final float LOGO_BOB = 6;
 
     /** Space around each tile, in cells. */
     static final float TILE_GAP = 0;
