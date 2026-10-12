@@ -5,8 +5,6 @@ import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -29,8 +27,6 @@ public class GameScreen extends ScreenAdapter {
     private static final int LANES = ChartGenerator.LANES;
     private static final int VISIBLE_CELLS = 4;
     private static final int COMBO_MILESTONE = 100;
-    private static final float COMBO_WIDTH = 240;
-    private static final float COMBO_HEIGHT = 90;
 
     private final Main game;
     private final Viewport boardViewport = new StretchViewport(LANES, VISIBLE_CELLS);
@@ -56,45 +52,40 @@ public class GameScreen extends ScreenAdapter {
         chart = new ChartGenerator(game.music);
         board = newBoard();
         Skin skin = game.skin;
-        BitmapFont font = skin.getFont("default");
-        Label.LabelStyle hint = new Label.LabelStyle(font, Theme.MUTED);
 
         pauseButton = new TextButton("II", skin, "round");
         Ui.onClick(pauseButton, this::openMenu);
-        bpm = new Label("", hint);
-        density = new Label("", hint);
-        density.setFontScale(font.getScaleX() * 0.7f);
+        bpm = Ui.label(skin, "", Colors.MUTED, Sizes.TEXT_NORMAL);
+        density = Ui.label(skin, "", Colors.MUTED, Sizes.TEXT_SMALL);
         Table info = new Table();
         info.add(bpm).right().row();
         info.add(density).right();
         Table hud = new Table();
         hud.setFillParent(true);
         hud.top().left().pad(8);
-        hud.add(pauseButton).size(56);
+        hud.add(pauseButton).size(Sizes.PAUSE_BUTTON);
         hud.add(info).expandX().right().top().padRight(8);
         stage.addActor(hud);
 
-        combo = new Label("", new Label.LabelStyle(font, Color.WHITE));
-        combo.setFontScale(font.getScaleX() * 2);
-        combo.setColor(Theme.ACCENT);
+        combo = Ui.label(skin, "", Colors.ACCENT, Sizes.TEXT_LARGE);
         comboPop = new Container<>(combo);
         comboPop.setTransform(true);
-        comboPop.setOrigin(COMBO_WIDTH / 2, COMBO_HEIGHT / 2);
+        comboPop.setOrigin(Sizes.COMBO_WIDTH / 2, Sizes.COMBO_HEIGHT / 2);
         comboPop.setVisible(false);
         Table top = new Table();
         top.setFillParent(true);
         top.top().padTop(80);
-        top.add(comboPop).size(COMBO_WIDTH, COMBO_HEIGHT);
+        top.add(comboPop).size(Sizes.COMBO_WIDTH, Sizes.COMBO_HEIGHT);
         stage.addActor(top);
 
-        listening = new Label("Listening...", hint);
+        listening = Ui.label(skin, "Listening...", Colors.MUTED, Sizes.TEXT_NORMAL);
         Table center = new Table();
         center.setFillParent(true);
         center.add(listening);
         stage.addActor(center);
 
         menu.setFillParent(true);
-        menu.setBackground(skin.newDrawable("white", Theme.OVERLAY));
+        menu.setBackground(skin.newDrawable("white", Colors.OVERLAY));
         menu.setVisible(false);
         stage.addActor(menu);
 
@@ -122,8 +113,8 @@ public class GameScreen extends ScreenAdapter {
             }
         });
         Table densityRow = new Table();
-        densityRow.add(densitySlider).width(160).padRight(16);
-        densityRow.add(densityValue).width(44);
+        densityRow.add(densitySlider).width(Sizes.SLIDER_WIDTH).padRight(16);
+        densityRow.add(densityValue).width(Sizes.SLIDER_VALUE_WIDTH);
         menu.add(densityRow).padBottom(32).row();
 
         addMenuButton("Resume", this::closeMenu);
@@ -140,7 +131,7 @@ public class GameScreen extends ScreenAdapter {
     private void addMenuButton(String text, Runnable action) {
         TextButton button = new TextButton(text, game.skin);
         Ui.onClick(button, action);
-        menu.add(button).size(220, 60).padBottom(16).row();
+        menu.add(button).size(Sizes.PAUSE_MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).padBottom(16).row();
     }
 
     private void closeMenu() {
@@ -183,8 +174,8 @@ public class GameScreen extends ScreenAdapter {
         if (milestone) {
             comboMilestone.play();
             combo.clearActions();
-            combo.setColor(Color.GOLD);
-            combo.addAction(Actions.color(Theme.ACCENT, 0.6f));
+            combo.setColor(Colors.MILESTONE);
+            combo.addAction(Actions.color(Colors.ACCENT, 0.6f));
         }
     }
 

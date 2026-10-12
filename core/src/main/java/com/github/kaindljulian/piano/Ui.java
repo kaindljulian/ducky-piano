@@ -23,25 +23,17 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
  */
 final class Ui {
     /**
-     * UI layout size in virtual pixels. The viewport stretches it to fill the screen.
-     */
-    private static final float WIDTH = 360;
-    private static final float HEIGHT = 640;
-    /**
-     * Text height in virtual pixels.
-     */
-    private static final float FONT_SIZE = 28;
-    /**
      * Glyph height in the font texture, in real pixels.
      */
     private static final int FONT_RASTER_SIZE = 128;
     private static final int CIRCLE_PIXELS = 128;
     /** The circle a rounded bar is stretched from. Small, so its ends stay smooth when scaled down. */
     private static final int PILL_PIXELS = 32;
-    /** In virtual pixels. */
-    private static final float TRACK_HEIGHT = 8;
-    /** In virtual pixels. */
-    private static final float KNOB_SIZE = 26;
+
+    /** A shape for {@link #texture}, given coordinates from -1 to 1 across the texture with y pointing up. */
+    interface Shape {
+        boolean contains(float x, float y);
+    }
 
     private Ui() {
     }
@@ -54,8 +46,8 @@ final class Ui {
         pixmap.fill();
         skin.add("white", new Texture(pixmap));
         pixmap.dispose();
-        skin.add("circle", circleTexture(CIRCLE_PIXELS));
-        skin.add("pill", circleTexture(PILL_PIXELS));
+        skin.add("circle", texture(CIRCLE_PIXELS, Ui::inCircle));
+        skin.add("pill", texture(PILL_PIXELS, Ui::inCircle));
 
         // The viewport scales virtual pixels up to the screen, by about 3x on phones. The glyphs are
         // rasterized well above that and shrunk with mipmaps, so text stays sharp at any window size.
@@ -67,38 +59,43 @@ final class Ui {
         parameter.magFilter = Texture.TextureFilter.Linear;
         BitmapFont font = generator.generateFont(parameter);
         generator.dispose();
-        font.getData().setScale(FONT_SIZE / FONT_RASTER_SIZE);
+        font.getData().setScale(Sizes.FONT_SIZE / FONT_RASTER_SIZE);
         font.setUseIntegerPositions(false);
         skin.add("default", font);
 
-        skin.add("default", new Label.LabelStyle(font, Color.WHITE));
+        skin.add("default", new Label.LabelStyle(font, Colors.TEXT));
 
         TextButton.TextButtonStyle button = new TextButton.TextButtonStyle();
-        button.up = skin.newDrawable("white", Theme.BUTTON);
-        button.down = skin.newDrawable("white", Theme.BUTTON_DOWN);
+        button.up = skin.newDrawable("white", Colors.BUTTON);
+        button.down = skin.newDrawable("white", Colors.BUTTON_DOWN);
         button.font = font;
         skin.add("default", button);
 
         TextButton.TextButtonStyle round = new TextButton.TextButtonStyle(button);
-        round.up = skin.newDrawable("circle", Theme.BUTTON);
-        round.down = skin.newDrawable("circle", Theme.BUTTON_DOWN);
+        round.up = skin.newDrawable("circle", Colors.BUTTON);
+        round.down = skin.newDrawable("circle", Colors.BUTTON_DOWN);
         skin.add("round", round);
 
-        Slider.SliderStyle slider = new Slider.SliderStyle(bar(skin, Theme.BUTTON), circle(skin, Color.WHITE, KNOB_SIZE));
-        slider.knobBefore = bar(skin, Theme.ACCENT);
-        slider.knobDown = circle(skin, Color.WHITE, KNOB_SIZE * 1.15f);
+        TextButton.TextButtonStyle accent = new TextButton.TextButtonStyle(button);
+        accent.up = skin.newDrawable("white", Colors.ACCENT);
+        accent.down = skin.newDrawable("white", Colors.ACCENT_DOWN);
+        skin.add("accent", accent);
+
+        Slider.SliderStyle slider = new Slider.SliderStyle(bar(skin, Colors.BUTTON), circle(skin, Colors.KNOB, Sizes.KNOB));
+        slider.knobBefore = bar(skin, Colors.ACCENT);
+        slider.knobDown = circle(skin, Colors.KNOB, Sizes.KNOB_DOWN);
         skin.add("default-horizontal", slider);
 
         return skin;
     }
 
-    /** A bar with round ends, {@link #TRACK_HEIGHT} tall. */
+    /** A bar with round ends, {@link Sizes#TRACK_HEIGHT} tall. */
     private static Drawable bar(Skin skin, Color color) {
         int corner = PILL_PIXELS / 2 - 1;
         NinePatch patch = new NinePatch(skin.get("pill", Texture.class), corner, corner, corner, corner);
-        patch.scale(TRACK_HEIGHT / 2 / corner, TRACK_HEIGHT / 2 / corner);
+        patch.scale(Sizes.TRACK_HEIGHT / 2 / corner, Sizes.TRACK_HEIGHT / 2 / corner);
         Drawable bar = new NinePatchDrawable(patch).tint(color);
-        bar.setMinHeight(TRACK_HEIGHT);
+        bar.setMinHeight(Sizes.TRACK_HEIGHT);
         return bar;
     }
 
@@ -109,20 +106,19 @@ final class Ui {
         return circle;
     }
 
-    /** A white circle with its edge smoothed by sampling each pixel 4x4. */
-    private static Texture circleTexture(int pixels) {
+    /** A white texture of a shape, with its edge smoothed by sampling each pixel 4x4. */
+    static Texture texture(int pixels, Shape shape) {
         Pixmap pixmap = new Pixmap(pixels, pixels, Pixmap.Format.RGBA8888);
         pixmap.setBlending(Pixmap.Blending.None);
         Color color = new Color(Color.WHITE);
-        float radius = pixels / 2f;
         for (int px = 0; px < pixels; px++) {
             for (int py = 0; py < pixels; py++) {
                 int inside = 0;
                 for (int sx = 0; sx < 4; sx++) {
                     for (int sy = 0; sy < 4; sy++) {
-                        float x = px + (sx + 0.5f) / 4 - radius;
-                        float y = py + (sy + 0.5f) / 4 - radius;
-                        if (x * x + y * y <= radius * radius) {
+                        float x = 2 * (px + (sx + 0.5f) / 4) / pixels - 1;
+                        float y = 1 - 2 * (py + (sy + 0.5f) / 4) / pixels;
+                        if (shape.contains(x, y)) {
                             inside++;
                         }
                     }
@@ -137,8 +133,20 @@ final class Ui {
         return texture;
     }
 
+    private static boolean inCircle(float x, float y) {
+        return x * x + y * y <= 1;
+    }
+
+    /** A label in the skin's font, tinted and scaled relative to the normal text size. */
+    static Label label(Skin skin, String text, Color color, float scale) {
+        Label label = new Label(text, skin);
+        label.setColor(color);
+        label.setFontScale(label.getStyle().font.getScaleX() * scale);
+        return label;
+    }
+
     static Stage createStage() {
-        return new Stage(new ExtendViewport(WIDTH, HEIGHT));
+        return new Stage(new ExtendViewport(Sizes.UI_WIDTH, Sizes.UI_HEIGHT));
     }
 
     static void onClick(Actor actor, Runnable action) {
