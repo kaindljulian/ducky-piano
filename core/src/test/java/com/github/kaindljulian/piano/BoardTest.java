@@ -14,7 +14,7 @@ class BoardTest {
 
     @BeforeEach
     void startOnFirstLane() {
-        board = new Board(4, 4, beatsAhead -> new Note[]{new Note(0, 0, 0)});
+        board = new Board(4, 4, 1, beatsAhead -> new Note[]{new Note(0, 0, 0)});
         board.tap(0.5f, 0.5f, 0);
         board.update(0);
     }
@@ -61,8 +61,7 @@ class BoardTest {
 
     @Test
     void splitBeatsScrollFasterWithTilesOneCellTall() {
-        Board split = new Board(4, 4, beatsAhead -> new Note[]{new Note(0, 0, 0), new Note(1, 0.5f, 0)});
-        split.setCellsPerBeat(2);
+        Board split = new Board(4, 4, 2, beatsAhead -> new Note[]{new Note(0, 0, 0), new Note(1, 0.5f, 0)});
         split.tap(0.5f, 0.5f, 0);
         split.tap(1.5f, 1.5f, 0);
         split.tap(0.5f, 2.5f, 0);
@@ -72,30 +71,65 @@ class BoardTest {
     }
 
     @Test
-    void wrongTapSnapsToTheBeatGrid() {
-        board.setCellsPerBeat(1.5f);
-        board.tap(2.5f, 1.4f, 0);
+    void beatsWithoutAnOffbeatTileLeaveAnEmptyRow() {
+        Board mixed = alternatingSplitBeats(2);
+        mixed.update(0.75);
 
-        assertEquals(0.5f, board.getWrongTap().start);
+        for (Tile tile : mixed.getTiles()) {
+            assertEquals(2 * (tile.start - 0.75f), mixed.y(tile.start), 1e-5f);
+        }
     }
 
     @Test
-    void holdingToTheEndCompletesAHold() {
+    void offbeatTilesGetARowEvenWithOneRowPerBeat() {
+        Board mixed = alternatingSplitBeats(1);
+        mixed.update(0.75);
+
+        float first = mixed.y(mixed.getTiles().first().start);
+        for (int i = 0; i < mixed.getTiles().size; i++) {
+            assertEquals(first + i, mixed.y(mixed.getTiles().get(i).start), 1e-5f);
+        }
+    }
+
+    @Test
+    void wrongTapSnapsToTheRowGrid() {
+        Board mixed = alternatingSplitBeats(2);
+        mixed.tap(2.5f, 3.4f, 0);
+
+        assertEquals(1.5f, mixed.getWrongTap().start);
+    }
+
+    @Test
+    void holdingToTheEndCompletesAHoldWithAHitPerCell() {
         Board hold = holdOnSecondBeat();
         hold.tap(1.5f, 1.2f, 1);
+        Tile tile = hold.getTiles().get(1);
+        assertEquals(2, hold.getCombo());
+
         hold.update(1.9);
 
-        Tile tile = hold.getTiles().get(1);
         assertFalse(tile.isHeld());
         assertFalse(tile.isMissed());
-        assertEquals(2, hold.getCombo());
+        assertEquals(2, tile.getPassed());
+        assertEquals(3, hold.getCombo());
     }
 
     @Test
-    void lettingGoEarlyBreaksTheCombo() {
+    void goingDownAboveTheFirstCellBreaksTheCombo() {
+        Board hold = holdOnSecondBeat();
+        hold.tap(1.5f, 2.2f, 1);
+
+        Tile tile = hold.getTiles().get(1);
+        assertTrue(tile.isMissed());
+        assertFalse(tile.isHeld());
+        assertEquals(0, hold.getCombo());
+    }
+
+    @Test
+    void lettingGoBeforeTheLastCellBreaksTheCombo() {
         Board hold = holdOnSecondBeat();
         hold.tap(1.5f, 1.2f, 1);
-        hold.update(1);
+        hold.update(0.5);
         hold.release(1);
 
         assertTrue(hold.getTiles().get(1).isMissed());
@@ -103,14 +137,14 @@ class BoardTest {
     }
 
     @Test
-    void lettingGoJustBeforeTheEndCompletesAHold() {
+    void lettingGoInTheLastCellCompletesAHold() {
         Board hold = holdOnSecondBeat();
         hold.tap(1.5f, 1.2f, 1);
-        hold.update(1.6);
+        hold.update(0.9);
         hold.release(1);
 
         assertFalse(hold.getTiles().get(1).isMissed());
-        assertEquals(2, hold.getCombo());
+        assertEquals(3, hold.getCombo());
     }
 
     @Test
@@ -121,7 +155,7 @@ class BoardTest {
         hold.tap(0.5f, 2.2f, 2);
 
         assertTrue(hold.getTiles().get(1).isHeld());
-        assertEquals(3, hold.getCombo());
+        assertEquals(4, hold.getCombo());
     }
 
     @Test
@@ -131,11 +165,22 @@ class BoardTest {
         assertEquals(3f, hold.getTiles().get(2).start);
     }
 
+    /** A split beat with an off-beat tile, then a plain one, and so on. Started at beat 0. */
+    private static Board alternatingSplitBeats(int rowsPerBeat) {
+        int[] next = {0};
+        Board mixed = new Board(4, 4, rowsPerBeat, beatsAhead -> next[0]++ % 2 == 0
+            ? new Note[]{new Note(0, 0, 0), new Note(1, 0.5f, 0)}
+            : new Note[]{new Note(0, 0, 0)});
+        mixed.tap(0.5f, 0.5f, 0);
+        mixed.update(0);
+        return mixed;
+    }
+
     /** Lane 0 on every beat, except a two beat hold in lane 1 from beat 1. Started and scrolled to beat 0. */
     private static Board holdOnSecondBeat() {
         Note[][] beats = {{new Note(0, 0, 0)}, {new Note(1, 0, 2)}, {}};
         int[] next = {0};
-        Board hold = new Board(4, 4, beatsAhead -> next[0] < beats.length ? beats[next[0]++] : new Note[]{new Note(0, 0, 0)});
+        Board hold = new Board(4, 4, 1, beatsAhead -> next[0] < beats.length ? beats[next[0]++] : new Note[]{new Note(0, 0, 0)});
         hold.tap(0.5f, 0.5f, 0);
         hold.update(0);
         return hold;

@@ -2,12 +2,17 @@ package com.github.kaindljulian.piano;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.FloatArray;
 import com.badlogic.gdx.utils.IntMap;
+
+import java.util.Arrays;
 
 
 /**
- * Tiles on a beat grid. Plain tiles are one cell tall and the board scrolls {@link #getCellsPerBeat()} cells per
- * beat, so more tiles per beat means faster scrolling. Hold tiles span whole beats.
+ * Tiles on a grid of rows one cell tall, scrolling {@link #setRowsPerBeat rows per beat}. With two rows per beat a
+ * beat without an off-beat tile leaves its second row empty. Plain tiles fill one row. Hold tiles are a run of
+ * connected rows that the finger goes down in the first of and comes up in the last of, and every row it is dragged
+ * through counts as a hit.
  */
 public class Board {
     public enum State { READY, RUNNING }
@@ -21,9 +26,6 @@ public class Board {
         Note[] notes(double beatsAhead);
     }
 
-    /** Letting go of a hold this many beats before its end still completes it. */
-    private static final float RELEASE_TOLERANCE = 0.25f;
-
     public final int lanes;
     public final int visibleCells;
     private final Chart chart;
@@ -32,17 +34,20 @@ public class Board {
     private final Array<Tile> tiles = new Array<>();
     private final IntMap<Tile> heldByPointer = new IntMap<>();
     private int nextBeat;
+    /** The cell each spawned beat starts on, plus where the next one will. */
+    private final FloatArray beatCells = FloatArray.with(0);
     private float scroll;
     private double origin;
     private boolean aligned;
     private State state = State.READY;
     private int combo;
     private Tile wrongTap;
-    private float cellsPerBeat = 1;
+    private int rowsPerBeat;
 
-    public Board(int lanes, int visibleCells, Chart chart) {
+    public Board(int lanes, int visibleCells, int rowsPerBeat, Chart chart) {
         this.lanes = lanes;
         this.visibleCells = visibleCells;
+        this.rowsPerBeat = rowsPerBeat;
         this.chart = chart;
         spawn();
     }
@@ -59,7 +64,7 @@ public class Board {
         IntMap.Values<Tile> held = heldByPointer.values();
         while (held.hasNext()) {
             Tile tile = held.next();
-            if (scroll + tile.heldAt >= tile.start + tile.length) {
+            if (drag(tile) >= cell(tile.start + tile.length)) {
                 tile.held = false;
                 held.remove();
             }
@@ -85,19 +90,19 @@ public class Board {
 
     /**
      * Handles a finger going down at a position in cell coordinates relative to the screen bottom. Any open tile
-     * can be hit. Open tiles before it count as missed.
+     * can be hit. Open tiles before it count as missed, and so does a hold tile hit above its first row.
      */
     public void tap(float x, float y, int pointer) {
         if (x < 0 || x >= lanes) return;
         int lane = (int) x;
-        float position = scroll + y / cellsPerBeat;
+        float tapCell = cell(scroll) + y;
+        float position = beatAt(tapCell);
 
         Tile hit = tileAt(lane, position);
         if (hit == null) {
             if (state == State.RUNNING) {
                 combo = 0;
-                int slotsPerBeat = MathUtils.ceil(cellsPerBeat);
-                wrongTap = new Tile(lane, (float) MathUtils.floor(position * slotsPerBeat) / slotsPerBeat, 0);
+                wrongTap = new Tile(lane, beatAt(MathUtils.floor(tapCell)), 0);
             }
             return;
         }
@@ -110,22 +115,29 @@ public class Board {
                 combo = 0;
             }
         }
+        state = State.RUNNING;
+        if (hit.isHold() && tapCell >= cell(hit.start) + 1) {
+            hit.missed = true;
+            combo = 0;
+            return;
+        }
         hit.tapped = true;
+        hit.passed = 1;
         if (hit.isHold()) {
             hit.held = true;
-            hit.heldAt = position - scroll;
+            hit.heldAt = y;
+            hit.grabbedAt = tapCell - cell(hit.start);
             heldByPointer.put(pointer, hit);
         }
         combo++;
-        state = State.RUNNING;
     }
 
-    /** Handles a finger going up. Letting go of a hold tile well before its end breaks the combo. */
+    /** Handles a finger going up. Letting go of a hold tile before its last row breaks the combo. */
     public void release(int pointer) {
         Tile tile = heldByPointer.remove(pointer);
         if (tile == null) return;
         tile.held = false;
-        if (scroll + tile.heldAt < tile.start + tile.length - RELEASE_TOLERANCE) {
+        if (drag(tile) < cell(tile.start + tile.length) - 1) {
             tile.missed = true;
             combo = 0;
         }
@@ -135,17 +147,19 @@ public class Board {
         return tiles;
     }
 
-    public void setCellsPerBeat(float cellsPerBeat) {
-        this.cellsPerBeat = cellsPerBeat;
+    /** Takes effect from the next beat to spawn, so the tiles already there keep their rows. */
+    public void setRowsPerBeat(int rowsPerBeat) {
+        this.rowsPerBeat = rowsPerBeat;
     }
 
-    public float getCellsPerBeat() {
-        return cellsPerBeat;
-    }
-
-    /** How many beats the board has scrolled so far. A tile is drawn {@code start - scroll} beats up. */
+    /** How many beats the board has scrolled so far. */
     public float getScroll() {
         return scroll;
+    }
+
+    /** How many cells above the screen bottom a beat count is. */
+    public float y(float beat) {
+        return cell(beat) - cell(scroll);
     }
 
     public State getState() {
@@ -169,16 +183,63 @@ public class Board {
         return null;
     }
 
+    /** Counts a hit for each row of a held tile the finger reached since last time, and returns the finger's cell. */
+    private float drag(Tile tile) {
+        float finger = cell(scroll) + tile.heldAt;
+        float bottom = cell(tile.start);
+        int rows = Math.round(cell(tile.start + tile.length) - bottom);
+        int reached = Math.min(MathUtils.floor(finger - bottom) + 1, rows);
+        combo += Math.max(reached - tile.passed, 0);
+        tile.passed = Math.max(tile.passed, reached);
+        return finger;
+    }
+
     private float end(Tile tile) {
-        return tile.start + Math.max(tile.length, 1 / cellsPerBeat);
+        return tile.isHold() ? tile.start + tile.length : beatAt(cell(tile.start) + 1);
+    }
+
+    /** The cell a beat count falls on. Outside the spawned beats, each beat has the current rows per beat. */
+    private float cell(float beat) {
+        int index = MathUtils.floor(beat);
+        float from = beatCell(index);
+        return from + (beat - index) * (beatCell(index + 1) - from);
+    }
+
+    private float beatAt(float cell) {
+        if (cell < 0) {
+            return cell / rowsPerBeat;
+        }
+        if (cell >= beatCells.peek()) {
+            return nextBeat + (cell - beatCells.peek()) / rowsPerBeat;
+        }
+        int found = Arrays.binarySearch(beatCells.items, 0, beatCells.size, cell);
+        int index = found >= 0 ? found : -found - 2;
+        float from = beatCells.get(index);
+        return index + (cell - from) / (beatCells.get(index + 1) - from);
+    }
+
+    private float beatCell(int beat) {
+        if (beat < 0) {
+            return beat * rowsPerBeat;
+        }
+        if (beat > nextBeat) {
+            return beatCells.peek() + (beat - nextBeat) * rowsPerBeat;
+        }
+        return beatCells.get(beat);
     }
 
     /** Keeps the board filled one beat past the top edge, so tiles never pop in on screen. */
     private void spawn() {
-        while (nextBeat <= scroll + visibleCells / cellsPerBeat) {
+        while (beatCells.peek() <= cell(scroll) + visibleCells) {
+            int rows = rowsPerBeat;
             for (Note note : chart.notes(nextBeat - scroll)) {
                 tiles.add(new Tile(note.lane(), nextBeat + note.offset(), note.length()));
+                // A bar planned before the density went down can still have off-beat tiles.
+                if (note.offset() > 0) {
+                    rows = 2;
+                }
             }
+            beatCells.add(beatCells.peek() + rows);
             nextBeat++;
         }
     }

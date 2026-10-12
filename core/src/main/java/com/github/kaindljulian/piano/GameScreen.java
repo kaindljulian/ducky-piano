@@ -102,9 +102,7 @@ public class GameScreen extends ScreenAdapter {
     }
 
     private Board newBoard() {
-        Board board = new Board(LANES, VISIBLE_CELLS, chart);
-        board.setCellsPerBeat(game.tilesPerBeat);
-        return board;
+        return new Board(LANES, VISIBLE_CELLS, rowsPerBeat(), chart);
     }
 
     private void openMenu() {
@@ -153,8 +151,13 @@ public class GameScreen extends ScreenAdapter {
 
     private void applyDensity() {
         chart.setTilesPerBeat(game.tilesPerBeat);
-        board.setCellsPerBeat(game.tilesPerBeat);
+        board.setRowsPerBeat(rowsPerBeat());
         density.setText(densityText());
+    }
+
+    /** Off-beat tiles need a row of their own, so any density above 1 gets a row on every 8th note. */
+    private int rowsPerBeat() {
+        return game.tilesPerBeat > 1 ? 2 : 1;
     }
 
     private String densityText() {

@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.media.projection.MediaProjection;
+import android.media.projection.MediaProjectionConfig;
 import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Handler;
@@ -58,10 +59,15 @@ public final class PlaybackCaptureRequest {
     }
 
     /**
-     * The consent dialog intent, for activities that aren't a libGDX {@link AndroidApplication}.
+     * The consent dialog intent, for activities that aren't a libGDX {@link AndroidApplication}. From Android 14 on,
+     * the dialog only offers the whole screen, because picking a single app there launches that app over the game.
      */
     public static Intent createIntent(Context context) {
-        return context.getSystemService(MediaProjectionManager.class).createScreenCaptureIntent();
+        MediaProjectionManager manager = context.getSystemService(MediaProjectionManager.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return manager.createScreenCaptureIntent(MediaProjectionConfig.createConfigForDefaultDisplay());
+        }
+        return manager.createScreenCaptureIntent();
     }
 
     /**
