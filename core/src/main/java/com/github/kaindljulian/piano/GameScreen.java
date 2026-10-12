@@ -29,7 +29,6 @@ public class GameScreen extends ScreenAdapter {
     private static final int LANES = ChartGenerator.LANES;
     private static final int VISIBLE_CELLS = 4;
     private static final int COMBO_MILESTONE = 100;
-    private static final Color COMBO_COLOR = new Color(0.25f, 0.55f, 1f, 1f);
     private static final float COMBO_WIDTH = 240;
     private static final float COMBO_HEIGHT = 90;
 
@@ -77,7 +76,7 @@ public class GameScreen extends ScreenAdapter {
 
         combo = new Label("", new Label.LabelStyle(font, Color.WHITE));
         combo.setFontScale(font.getScaleX() * 2);
-        combo.setColor(COMBO_COLOR);
+        combo.setColor(Theme.ACCENT);
         comboPop = new Container<>(combo);
         comboPop.setTransform(true);
         comboPop.setOrigin(COMBO_WIDTH / 2, COMBO_HEIGHT / 2);
@@ -182,7 +181,7 @@ public class GameScreen extends ScreenAdapter {
             comboMilestone.play();
             combo.clearActions();
             combo.setColor(Color.GOLD);
-            combo.addAction(Actions.color(COMBO_COLOR, 0.6f));
+            combo.addAction(Actions.color(Theme.ACCENT, 0.6f));
         }
     }
 
@@ -194,7 +193,13 @@ public class GameScreen extends ScreenAdapter {
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 if (menu.isVisible()) return false;
                 boardViewport.unproject(touch.set(screenX, screenY));
-                board.tap(touch.x, touch.y);
+                board.tap(touch.x, touch.y, pointer);
+                return true;
+            }
+
+            @Override
+            public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+                board.release(pointer);
                 return true;
             }
         }));

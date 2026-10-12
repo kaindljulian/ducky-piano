@@ -3,7 +3,7 @@ package com.github.kaindljulian.piano.audio;
 /** Tracks the beat of a live audio stream. Feed it from an {@link AudioCaptureReader} and query it from any thread. */
 public class MusicAnalyzer implements AudioCaptureReader.Listener {
     private static final int BEATS_TO_LOCK = 2;
-    private static final float SILENT_LEVEL = 0.001f;
+    static final float SILENT_LEVEL = 0.001f;
     private static final float SILENCE_SECONDS = 1;
     private static final int HISTORY = 1024;
 
@@ -13,6 +13,8 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
     private final float framesPerSecond;
     private final int silentFramesForSilence;
     private final float[][] bandFlux = new float[HISTORY][OnsetDetector.BANDS];
+    private final float[][] bandEnergy = new float[HISTORY][OnsetDetector.BANDS];
+    private final float[] levels = new float[HISTORY];
     private OnsetDetector onsets;
     private TempoEstimator tempo;
     private BeatTracker tracker;
@@ -50,7 +52,10 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
         process(samples, count, System.nanoTime());
     }
 
-    /** The latest predicted beat, or null while no music plays or the tracker hasn't locked on yet. */
+    /**
+     * The latest predicted beat, or null until the tracker locks on. Through silence it stays at the last beat
+     * before it, so the beats carry on at the same tempo.
+     */
     public Beat latestBeat() {
         return latestBeat;
     }
@@ -85,6 +90,42 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
         return rise;
     }
 
+    /** The average energy of each frequency band around {@code nanos}, or null if that time isn't in the history. */
+    public synchronized float[] bandEnergy(long nanos, long halfWidthNanos) {
+        long center = frameAt(nanos);
+        long halfWidth = Math.round(halfWidthNanos / nanosPerSample / OnsetDetector.HOP);
+        long from = center - halfWidth;
+        long to = center + halfWidth;
+        if (from < Math.max(0, frames - HISTORY) || to >= frames) {
+            return null;
+        }
+
+        float[] energy = new float[OnsetDetector.BANDS];
+        for (long frame = from; frame <= to; frame++) {
+            for (int band = 0; band < energy.length; band++) {
+                energy[band] += bandEnergy[(int) (frame % HISTORY)][band] / (to - from + 1);
+            }
+        }
+        return energy;
+    }
+
+    /** The average RMS level around {@code nanos}, or NaN if that time isn't in the history. */
+    public synchronized float level(long nanos, long halfWidthNanos) {
+        long center = frameAt(nanos);
+        long halfWidth = Math.round(halfWidthNanos / nanosPerSample / OnsetDetector.HOP);
+        long from = center - halfWidth;
+        long to = center + halfWidth;
+        if (from < Math.max(0, frames - HISTORY) || to >= frames) {
+            return Float.NaN;
+        }
+
+        float sum = 0;
+        for (long frame = from; frame <= to; frame++) {
+            sum += levels[(int) (frame % HISTORY)];
+        }
+        return sum / (to - from + 1);
+    }
+
     void process(float[] block, int count, long receivedNanos) {
         samples += count / channelCount;
         // Blocks arrive late by a varying amount, so the earliest arrival seen so far is the best estimate of
@@ -108,7 +149,9 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
         synchronized (this) {
             for (int band = 0; band < OnsetDetector.BANDS; band++) {
                 bandFlux[(int) (frames % HISTORY)][band] = onsets.bandFlux(band);
+                bandEnergy[(int) (frames % HISTORY)][band] = onsets.bandEnergy(band);
             }
+            levels[(int) (frames % HISTORY)] = onsets.level();
             frames++;
         }
         tempo.add(flux);
@@ -116,7 +159,6 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
         silentFrames = onsets.level() < SILENT_LEVEL ? silentFrames + 1 : 0;
         if (silentFrames >= silentFramesForSilence) {
             beatsSinceSilence = 0;
-            latestBeat = null;
         }
         if (tracker.add(flux, tempo.period()) && ++beatsSinceSilence >= BEATS_TO_LOCK) {
             long periodNanos = Math.round(tempo.period() * OnsetDetector.HOP * nanosPerSample);

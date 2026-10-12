@@ -21,6 +21,7 @@ class OnsetDetector {
     private final float[] previous = new float[WINDOW / 2 + 1];
     private final int[] bandOfBin = new int[WINDOW / 2 + 1];
     private final float[] bandFlux = new float[BANDS];
+    private final float[] bandEnergy = new float[BANDS];
     private int filled;
     private float flux;
     private float level;
@@ -64,6 +65,11 @@ class OnsetDetector {
         return bandFlux[band];
     }
 
+    /** The spectral energy of the frame in a band. */
+    float bandEnergy(int band) {
+        return bandEnergy[band];
+    }
+
     private void analyze() {
         float sumOfSquares = 0;
         for (int i = 0; i < WINDOW; i++) {
@@ -76,8 +82,11 @@ class OnsetDetector {
 
         flux = 0;
         Arrays.fill(bandFlux, 0);
+        Arrays.fill(bandEnergy, 0);
         for (int bin = 0; bin < previous.length; bin++) {
-            float magnitude = (float) Math.sqrt(re[bin] * re[bin] + im[bin] * im[bin]);
+            float energy = re[bin] * re[bin] + im[bin] * im[bin];
+            bandEnergy[bandOfBin[bin]] += energy;
+            float magnitude = (float) Math.sqrt(energy);
             float level = (float) Math.log1p(COMPRESSION * magnitude);
             float rise = level - previous[bin];
             previous[bin] = level;

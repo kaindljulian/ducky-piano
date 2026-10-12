@@ -16,7 +16,6 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MusicAnalyzerTest {
@@ -25,7 +24,7 @@ class MusicAnalyzerTest {
     private static final double FIRST_CLICK_SECONDS = 0.25;
     private static final double LOCK_SECONDS = 8;
 
-    private record Audio(float[] samples, int sampleRate, int channelCount) {
+    record Audio(float[] samples, int sampleRate, int channelCount) {
         static Audio mono(float[] samples) {
             return new Audio(samples, SAMPLE_RATE, 1);
         }
@@ -64,12 +63,12 @@ class MusicAnalyzerTest {
     }
 
     @Test
-    void unlocksOnSilence() {
+    void keepsTheBeatThroughSilence() {
         MusicAnalyzer analyzer = new MusicAnalyzer(SAMPLE_RATE, 1);
         feed(analyzer, Audio.mono(clicks(120, 12)), 0);
-        feed(analyzer, Audio.mono(new float[SAMPLE_RATE * 2]), 12);
+        feed(analyzer, Audio.mono(new float[SAMPLE_RATE * 4]), 12);
 
-        assertNull(analyzer.latestBeat());
+        assertEquals(120, bpm(analyzer.latestBeat()), 1);
     }
 
     @Test
@@ -147,7 +146,7 @@ class MusicAnalyzerTest {
         return fromSeconds + (double) length / audio.channelCount() / audio.sampleRate();
     }
 
-    private static Audio wav(String resource) throws Exception {
+    static Audio wav(String resource) throws Exception {
         var file = new BufferedInputStream(MusicAnalyzerTest.class.getResourceAsStream("/" + resource));
         try (AudioInputStream source = AudioSystem.getAudioInputStream(file)) {
             AudioFormat format = source.getFormat();
