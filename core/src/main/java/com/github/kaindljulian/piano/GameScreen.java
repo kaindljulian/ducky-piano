@@ -57,9 +57,9 @@ public class GameScreen extends ScreenAdapter {
         board = newBoard();
         Skin skin = game.skin;
         BitmapFont font = skin.getFont("default");
-        Label.LabelStyle hint = new Label.LabelStyle(font, Color.GRAY);
+        Label.LabelStyle hint = new Label.LabelStyle(font, Theme.MUTED);
 
-        pauseButton = new TextButton("II", skin);
+        pauseButton = new TextButton("II", skin, "round");
         Ui.onClick(pauseButton, this::openMenu);
         bpm = new Label("", hint);
         density = new Label("", hint);
@@ -94,7 +94,7 @@ public class GameScreen extends ScreenAdapter {
         stage.addActor(center);
 
         menu.setFillParent(true);
-        menu.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.7f)));
+        menu.setBackground(skin.newDrawable("white", Theme.OVERLAY));
         menu.setVisible(false);
         stage.addActor(menu);
 
