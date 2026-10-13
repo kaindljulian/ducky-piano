@@ -39,6 +39,14 @@ final class Colors {
     static final Color HEART = new Color(1f, 0.3f, 0.4f, 1f);
     /** The combo flashes this color every hundred hits. */
     static final Color MILESTONE = new Color(Color.WHITE);
+    /** The paler of the two sparkle colors dropping from the combo, next to {@link #ACCENT}. */
+    static final Color SPARKLE = new Color(1f, 0.96f, 0.75f, 1f);
+    /** The combo turns this color at 500 hits... */
+    static final Color COMBO_ORANGE = new Color(1f, 0.55f, 0.1f, 1f);
+    /** ...and this one at 900. */
+    static final Color COMBO_RED = new Color(1f, 0.18f, 0.12f, 1f);
+    /** The hot core of the flames on a burning combo. */
+    static final Color FLAME = new Color(1f, 0.9f, 0.45f, 1f);
 
     static final Color DUCK = new Color(ACCENT);
     static final Color DUCK_SHADE = new Color(0.96f, 0.68f, 0.12f, 1f);

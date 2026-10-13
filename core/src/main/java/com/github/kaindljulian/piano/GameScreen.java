@@ -27,6 +27,8 @@ public class GameScreen extends ScreenAdapter {
     private static final int LANES = ChartGenerator.LANES;
     private static final int VISIBLE_CELLS = 4;
     private static final int COMBO_MILESTONE = 100;
+    /** Smaller combos break without a quack. */
+    private static final int QUACK_COMBO = 30;
 
     private final Main game;
     private final Viewport boardViewport = new StretchViewport(LANES, VISIBLE_CELLS);
@@ -39,7 +41,9 @@ public class GameScreen extends ScreenAdapter {
     private final Label density;
     private final Label combo;
     private final Container<Label> comboPop;
-    private final Sound comboBreak = Gdx.audio.newSound(Gdx.files.internal("sounds/break.wav"));
+    private final Container<Container<Label>> comboThrob;
+    private final ComboTrail comboTrail;
+    private final Sound comboBreak = Gdx.audio.newSound(Gdx.files.internal("sounds/quack.wav"));
     private final Sound comboMilestone = Gdx.audio.newSound(Gdx.files.internal("sounds/milestone.wav"));
     private final Vector2 touch = new Vector2();
     private final BeatClock clock = new BeatClock();
@@ -72,10 +76,15 @@ public class GameScreen extends ScreenAdapter {
         comboPop.setTransform(true);
         comboPop.setOrigin(Sizes.COMBO_WIDTH / 2, Sizes.COMBO_HEIGHT / 2);
         comboPop.setVisible(false);
+        comboThrob = new Container<>(comboPop).fill();
+        comboThrob.setTransform(true);
+        comboThrob.setOrigin(Sizes.COMBO_WIDTH / 2, Sizes.COMBO_HEIGHT / 2);
+        comboTrail = new ComboTrail(skin, combo);
+        stage.addActor(comboTrail);
         Table top = new Table();
         top.setFillParent(true);
-        top.top().padTop(80);
-        top.add(comboPop).size(Sizes.COMBO_WIDTH, Sizes.COMBO_HEIGHT);
+        top.top().padTop(56);
+        top.add(comboThrob).size(Sizes.COMBO_WIDTH, Sizes.COMBO_HEIGHT);
         stage.addActor(top);
 
         listening = Ui.label(skin, "Listening...", Colors.MUTED, Sizes.TEXT_NORMAL);
@@ -157,11 +166,27 @@ public class GameScreen extends ScreenAdapter {
 
     private void updateCombo() {
         int current = board.getCombo();
+        int level = current / COMBO_MILESTONE;
+        comboTrail.setLevel(level);
         if (current > shownCombo) {
             combo.setText(String.valueOf(current));
-            pop(current % COMBO_MILESTONE == 0);
-        } else if (current < shownCombo) {
+            pop(level > shownCombo / COMBO_MILESTONE);
+            comboTrail.drip();
+        } else if (current < shownCombo && shownCombo >= QUACK_COMBO) {
             comboBreak.play();
+        }
+        if (!combo.hasActions()) {
+            combo.setColor(comboTrail.comboColor());
+        }
+        boolean burning = level >= ComboTrail.BURNING;
+        if (burning != comboThrob.hasActions()) {
+            comboThrob.clearActions();
+            comboThrob.setScale(1);
+            if (burning) {
+                comboThrob.addAction(Actions.forever(Actions.sequence(
+                    Actions.scaleTo(1.12f, 1.12f, 0.25f, Interpolation.sine),
+                    Actions.scaleTo(1, 1, 0.25f, Interpolation.sine))));
+            }
         }
         comboPop.setVisible(current > 0);
         shownCombo = current;
@@ -175,7 +200,8 @@ public class GameScreen extends ScreenAdapter {
             comboMilestone.play();
             combo.clearActions();
             combo.setColor(Colors.MILESTONE);
-            combo.addAction(Actions.color(Colors.ACCENT, 0.6f));
+            combo.addAction(Actions.color(comboTrail.comboColor(), 0.6f));
+            comboTrail.burst();
         }
     }
 

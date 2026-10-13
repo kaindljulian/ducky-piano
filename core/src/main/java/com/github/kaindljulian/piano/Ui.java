@@ -155,7 +155,7 @@ final class Ui {
         return duck;
     }
 
-    private static String duckTexture(Duck.Part part) {
+    static String duckTexture(Duck.Part part) {
         return "duck-" + part.name().toLowerCase();
     }
 

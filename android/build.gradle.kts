@@ -38,12 +38,12 @@ android {
     sourceSets {
         named("main") {
             manifest.srcFile("AndroidManifest.xml")
-            java.setSrcDirs(listOf("src/main/java"))
-            aidl.setSrcDirs(listOf("src/main/java"))
-            renderscript.setSrcDirs(listOf("src/main/java"))
-            res.setSrcDirs(listOf("res"))
-            assets.setSrcDirs(listOf("../assets"))
-            jniLibs.setSrcDirs(listOf(nativeLibsDirectory.get().asFile))
+            java.directories.apply { clear(); add("src/main/java") }
+            aidl.directories.apply { clear(); add("src/main/java") }
+            renderscript.directories.apply { clear(); add("src/main/java") }
+            res.directories.apply { clear(); add("res") }
+            assets.directories.apply { clear(); add("../assets") }
+            jniLibs.directories.apply { clear(); add(nativeLibsDirectory.get().asFile.path) }
         }
     }
     packaging {
@@ -92,10 +92,12 @@ dependencies {
     }
 }
 
+val adb = androidComponents.sdkComponents.adb
+
 tasks.register<Exec>("run") {
     description = "Starts the installed app on the connected device."
     commandLine(
-        android.sdkDirectory.resolve("platform-tools/adb").absolutePath,
+        adb.get().asFile.absolutePath,
         "shell",
         "am",
         "start",

@@ -11,6 +11,7 @@ final class Sizes {
     /** Text height. */
     static final float FONT_SIZE = 28;
     static final float TEXT_LARGE = 2;
+    static final float TEXT_TITLE = 1.7f;
     static final float TEXT_NORMAL = 1;
     static final float TEXT_SMALL = 0.7f;
     static final float TEXT_TINY = 0.6f;
@@ -26,8 +27,14 @@ final class Sizes {
     static final float KNOB_DOWN = 30;
     static final float COMBO_WIDTH = 240;
     static final float COMBO_HEIGHT = 90;
+    static final float SPARKLE_MIN = 3;
+    static final float SPARKLE_MAX = 7;
+    static final float FLAME_MIN = 8;
+    static final float FLAME_MAX = 16;
+    /** The ducks dropping from the combo. */
+    static final float COMBO_DUCK = 26;
     static final float HEART = 14;
-    static final float LOGO = 150;
+    static final float LOGO = 120;
     /** How far the logo bobs up and down. */
     static final float LOGO_BOB = 6;
 

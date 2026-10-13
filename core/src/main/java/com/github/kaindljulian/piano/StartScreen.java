@@ -31,8 +31,8 @@ public class StartScreen extends ScreenAdapter {
             Actions.moveBy(0, -Sizes.LOGO_BOB, LOGO_BOB_SECONDS, Interpolation.sine))));
 
         Table title = new Table();
-        title.add(Ui.label(game.skin, "Ducky", Colors.ACCENT, Sizes.TEXT_LARGE)).padRight(12);
-        title.add(Ui.label(game.skin, "Piano", Colors.TEXT, Sizes.TEXT_LARGE));
+        title.add(Ui.label(game.skin, "Ducky", Colors.ACCENT, Sizes.TEXT_TITLE)).padRight(12);
+        title.add(Ui.label(game.skin, "Piano", Colors.TEXT, Sizes.TEXT_TITLE));
 
         TextButton play = new TextButton("Play", game.skin, "accent");
         Ui.onClick(play, () -> game.switchTo(new GameScreen(game)));

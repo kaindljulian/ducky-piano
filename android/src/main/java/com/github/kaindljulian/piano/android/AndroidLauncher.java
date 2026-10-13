@@ -29,7 +29,7 @@ public class AndroidLauncher extends AndroidApplication {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
-        configuration.useImmersiveMode = true; // Recommended, but not required.
+        configuration.useImmersiveMode = true;
         initialize(new Main(music, this::selectAudioSource), configuration);
         requestAudioPermission();
     }
