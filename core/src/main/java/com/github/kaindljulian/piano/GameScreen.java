@@ -27,10 +27,18 @@ public class GameScreen extends ScreenAdapter {
     private static final int LANES = ChartGenerator.LANES;
     private static final int VISIBLE_CELLS = 4;
     private static final int COMBO_MILESTONE = 100;
+    private static final int RAINBOW_COMBO = 1000;
     /** Smaller combos break without a quack. */
     private static final int QUACK_COMBO = 30;
-    /** The last milestone: from here the combo goes rainbow, and the board with it. */
-    private static final int RAINBOW_COMBO = 5;
+    /**
+     * Each milestone up to {@link #RAINBOW_COMBO} makes the board scroll this much faster, and raises the lowest
+     * density the slider allows by as much, so the player can't turn it back down.
+     */
+    private static final float MILESTONE_SPEEDUP = 0.1f;
+    private static final float MIN_DENSITY = 1;
+    private static final float MAX_DENSITY = 2;
+    /** How quickly the scroll speed eases to a new speed, as the share of the gap closed per second. */
+    private static final float SPEED_EASING = 4;
 
     private final Main game;
     private final Viewport boardViewport = new StretchViewport(LANES, VISIBLE_CELLS);
@@ -53,6 +61,12 @@ public class GameScreen extends ScreenAdapter {
     private final ChartGenerator chart;
     private Board board;
     private int shownCombo;
+    private int boostedMilestones;
+    /**
+     * How much faster than normal the board scrolls. The tiles stay on the song's beats, so the board zooms in
+     * instead: fewer cells fit on screen and each one passes by quicker.
+     */
+    private float speed = 1;
 
     GameScreen(Main game) {
         this.game = game;
@@ -116,11 +130,16 @@ public class GameScreen extends ScreenAdapter {
         menu.add(new Label("Paused", skin)).padBottom(48).row();
 
         Label densityValue = new Label(densityText(), skin);
-        Slider densitySlider = new Slider(1, 2, 0.1f, false, skin);
-        densitySlider.setValue(game.tilesPerBeat);
+        Slider densitySlider = new Slider(MIN_DENSITY, MAX_DENSITY, 0.1f, false, skin);
+        densitySlider.setValue(density());
         densitySlider.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
+                // Sets the value back up, which fires this again. Snapping to steps can land a hair below.
+                if (densitySlider.getValue() < lowestDensity() - 0.01f) {
+                    densitySlider.setValue(lowestDensity());
+                    return;
+                }
                 game.tilesPerBeat = densitySlider.getValue();
                 applyDensity();
                 densityValue.setText(densityText());
@@ -133,8 +152,10 @@ public class GameScreen extends ScreenAdapter {
 
         addMenuButton("Resume", this::closeMenu);
         addMenuButton("Restart", () -> {
-            board = newBoard();
             shownCombo = 0;
+            boostedMilestones = 0;
+            board = newBoard();
+            applyDensity();
             closeMenu();
         });
         addMenuButton("Main menu", () -> game.switchTo(new StartScreen(game)));
@@ -155,18 +176,34 @@ public class GameScreen extends ScreenAdapter {
     }
 
     private void applyDensity() {
-        chart.setTilesPerBeat(game.tilesPerBeat);
+        chart.setTilesPerBeat(density());
         board.setRowsPerBeat(rowsPerBeat());
         density.setText(densityText());
     }
 
+    /** The player's density, unless the combo's milestones forced it higher. */
+    private float density() {
+        return Math.max(game.tilesPerBeat, lowestDensity());
+    }
+
+    private float lowestDensity() {
+        return Math.min(MIN_DENSITY + MILESTONE_SPEEDUP * boostedMilestones, MAX_DENSITY);
+    }
+
     /** Off-beat tiles need a row of their own, so any density above 1 gets a row on every 8th note. */
     private int rowsPerBeat() {
-        return game.tilesPerBeat > 1 ? 2 : 1;
+        return density() > 1 ? 2 : 1;
+    }
+
+    private void updateSpeed(float delta) {
+        float target = 1 + MILESTONE_SPEEDUP * boostedMilestones;
+        speed += (target - speed) * Math.min(delta * SPEED_EASING, 1);
+        boardViewport.setWorldHeight(VISIBLE_CELLS / speed);
+        boardViewport.update(boardViewport.getScreenWidth(), boardViewport.getScreenHeight(), true);
     }
 
     private String densityText() {
-        return String.format("%.1fx", game.tilesPerBeat);
+        return String.format("%.1fx", density());
     }
 
     private void updateCombo() {
@@ -207,6 +244,11 @@ public class GameScreen extends ScreenAdapter {
         }
         comboPop.setVisible(current > 0);
         shownCombo = current;
+        int milestones = Math.min(current, RAINBOW_COMBO) / COMBO_MILESTONE;
+        if (milestones != boostedMilestones) {
+            boostedMilestones = milestones;
+            applyDensity();
+        }
     }
 
     private void pop(boolean milestone) {
@@ -255,6 +297,7 @@ public class GameScreen extends ScreenAdapter {
         updateCombo();
         listening.setVisible(beat == null && !menu.isVisible());
         bpm.setText(beat == null ? "" : Math.round(60e9 / beat.periodNanos()) + " BPM");
+        updateSpeed(delta);
         renderer.render(board, boardViewport, board.getCombo() >= RAINBOW_COMBO);
 
         stage.getViewport().apply();

@@ -24,12 +24,12 @@ public class BoardRenderer implements Disposable {
         viewport.apply();
         shapes.setProjectionMatrix(viewport.getCamera().combined);
         laneWidth = (float) viewport.getScreenWidth() / board.lanes
-            / ((float) viewport.getScreenHeight() / board.visibleCells);
+            / ((float) viewport.getScreenHeight() / viewport.getWorldHeight());
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.rect(0, 0, board.lanes, board.visibleCells, Colors.BACKGROUND_BOTTOM, Colors.BACKGROUND_BOTTOM,
+        shapes.rect(0, 0, board.lanes, viewport.getWorldHeight(), Colors.BACKGROUND_BOTTOM, Colors.BACKGROUND_BOTTOM,
             Colors.BACKGROUND_TOP, Colors.BACKGROUND_TOP);
         for (Tile tile : board.getTiles()) {
             if (tile.isHold()) {
@@ -50,7 +50,7 @@ public class BoardRenderer implements Disposable {
         shapes.begin(ShapeRenderer.ShapeType.Line);
         shapes.setColor(Colors.LANE_LINE);
         for (int lane = 1; lane < board.lanes; lane++) {
-            shapes.line(lane, 0, lane, board.visibleCells);
+            shapes.line(lane, 0, lane, viewport.getWorldHeight());
         }
         shapes.end();
     }
