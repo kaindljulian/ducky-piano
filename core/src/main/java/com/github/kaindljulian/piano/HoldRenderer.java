@@ -9,7 +9,7 @@ import com.badlogic.gdx.math.MathUtils;
  * Draws an open hold tile as a blue tile with a pool of water in its first cell that swells on the beat. While held,
  * the water fills the tile, reaching the top as the finger gets to the middle of the last cell, where it may let go.
  * It calms down as it rises and surges each time the finger is dragged into the next cell. Long holds have a rubber
- * duck on it.
+ * duck on it. On a rainbow combo each hold takes one color of the rainbow instead of blue.
  */
 class HoldRenderer {
     private static final int WAVE_STRIPS = 24;
@@ -25,6 +25,10 @@ class HoldRenderer {
 
     private final ShapeRenderer shapes;
     private final Color color = new Color();
+    private final Color back = new Color();
+    private final Color deep = new Color();
+    private final Color idle = new Color();
+    private final Color water = new Color();
     /** The width of a lane on screen, in cells. Round shapes are scaled by it to stay round. */
     private float laneWidth;
 
@@ -32,10 +36,14 @@ class HoldRenderer {
         this.shapes = shapes;
     }
 
-    /** Draws a hold tile {@code height} cells tall, {@code y} cells above the bottom, into a filled shape batch. */
-    void draw(Board board, Tile tile, float y, float height, float laneWidth) {
+    /**
+     * Draws a hold tile {@code height} cells tall, {@code y} cells above the bottom, into a filled shape batch. It's
+     * blue for a negative {@code hue}, otherwise that many degrees around the rainbow.
+     */
+    void draw(Board board, Tile tile, float y, float height, float laneWidth, float hue) {
         this.laneWidth = laneWidth;
-        shapes.setColor(Colors.HOLD);
+        paint(hue);
+        shapes.setColor(back);
         shapes.rect(tile.lane, y, 1, height);
         float phase = board.getScroll() * WAVE_SPEED * MathUtils.PI2;
         float level;
@@ -47,12 +55,12 @@ class HoldRenderer {
             float progress = topTravel > 0 ? MathUtils.clamp(travel / topTravel, 0, 1) : 1;
             level = MathUtils.lerp(0.5f, height, Interpolation.sineOut.apply(progress));
             amplitude = Sizes.WAVE_HEIGHT * (1 - progress) + Sizes.SURGE_HEIGHT * surge(tile, y);
-            surface = Colors.WATER;
+            surface = water;
         } else {
             float pulse = 1 - (board.getScroll() - MathUtils.floor(board.getScroll()));
             level = 0.5f;
             amplitude = Sizes.IDLE_WAVE_HEIGHT * (0.6f + 0.4f * pulse);
-            surface = Colors.WATER_IDLE;
+            surface = idle;
         }
         drawWater(tile.lane, y, height, level, amplitude, phase, surface);
         drawBubbles(tile, y, level, board.getScroll());
@@ -62,6 +70,20 @@ class HoldRenderer {
             float waterline = Math.min(surface(x, height, level, amplitude, phase), height - top);
             drawDuck(tile.lane + x, y + waterline, surface);
         }
+    }
+
+    private void paint(float hue) {
+        if (hue < 0) {
+            back.set(Colors.HOLD);
+            deep.set(Colors.WATER_DEEP);
+            idle.set(Colors.WATER_IDLE);
+            water.set(Colors.WATER);
+            return;
+        }
+        Colors.rainbow(back, hue, 0.8f, 0.4f);
+        Colors.rainbow(deep, hue, 0.9f, 0.6f);
+        Colors.rainbow(idle, hue, 0.7f, 0.8f);
+        Colors.rainbow(water, hue, 0.55f, 1);
     }
 
     /** 1 as the finger enters a cell after the first, fading to 0 as it moves on. */
@@ -78,7 +100,7 @@ class HoldRenderer {
             float x0 = lane + (float) (strip - 1) / WAVE_STRIPS;
             float x1 = lane + (float) strip / WAVE_STRIPS;
             float top = y + surface((float) strip / WAVE_STRIPS, height, level, amplitude, phase);
-            drawStrip(x0, x1, y, y, previous, top, Colors.WATER_DEEP, surface);
+            drawStrip(x0, x1, y, y, previous, top, deep, surface);
             drawStrip(x0, x1, Math.max(previous - Sizes.SHINE_HEIGHT, y), Math.max(top - Sizes.SHINE_HEIGHT, y), previous, top,
                 Colors.SHINE_FADE, Colors.SHINE);
             drawStrip(x0, x1, Math.max(previous - Sizes.FOAM_HEIGHT, y), Math.max(top - Sizes.FOAM_HEIGHT, y), previous, top,

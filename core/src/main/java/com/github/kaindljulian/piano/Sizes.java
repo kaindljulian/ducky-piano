@@ -33,6 +33,10 @@ final class Sizes {
     static final float FLAME_MAX = 16;
     /** The ducks dropping from the combo. */
     static final float COMBO_DUCK = 26;
+    /** The speed lines past a rainbow combo. */
+    static final float SPEED_LINE_MIN = 40;
+    static final float SPEED_LINE_MAX = 90;
+    static final float SPEED_LINE_WIDTH = 2;
     static final float HEART = 14;
     static final float LOGO = 120;
     /** How far the logo bobs up and down. */

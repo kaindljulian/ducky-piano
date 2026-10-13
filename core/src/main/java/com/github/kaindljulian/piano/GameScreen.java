@@ -29,6 +29,8 @@ public class GameScreen extends ScreenAdapter {
     private static final int COMBO_MILESTONE = 100;
     /** Smaller combos break without a quack. */
     private static final int QUACK_COMBO = 30;
+    /** The last milestone: from here the combo goes rainbow, and the board with it. */
+    private static final int RAINBOW_COMBO = 5;
 
     private final Main game;
     private final Viewport boardViewport = new StretchViewport(LANES, VISIBLE_CELLS);
@@ -43,6 +45,7 @@ public class GameScreen extends ScreenAdapter {
     private final Container<Label> comboPop;
     private final Container<Container<Label>> comboThrob;
     private final ComboTrail comboTrail;
+    private final ComboPhase comboPhase;
     private final Sound comboBreak = Gdx.audio.newSound(Gdx.files.internal("sounds/quack.wav"));
     private final Sound comboMilestone = Gdx.audio.newSound(Gdx.files.internal("sounds/milestone.wav"));
     private final Vector2 touch = new Vector2();
@@ -81,6 +84,8 @@ public class GameScreen extends ScreenAdapter {
         comboThrob.setOrigin(Sizes.COMBO_WIDTH / 2, Sizes.COMBO_HEIGHT / 2);
         comboTrail = new ComboTrail(skin, combo);
         stage.addActor(comboTrail);
+        comboPhase = new ComboPhase(skin, combo);
+        stage.addActor(comboPhase);
         Table top = new Table();
         top.setFillParent(true);
         top.top().padTop(56);
@@ -166,18 +171,30 @@ public class GameScreen extends ScreenAdapter {
 
     private void updateCombo() {
         int current = board.getCombo();
-        int level = current / COMBO_MILESTONE;
+        boolean rainbow = current >= RAINBOW_COMBO;
+        // The trail has nothing to drop at level 0.
+        int level = rainbow ? 0 : current / COMBO_MILESTONE;
         comboTrail.setLevel(level);
         if (current > shownCombo) {
             combo.setText(String.valueOf(current));
-            pop(level > shownCombo / COMBO_MILESTONE);
+            if (rainbow && shownCombo < RAINBOW_COMBO) {
+                comboMilestone.play();
+                combo.clearActions();
+                comboTrail.clearParticles();
+                pop(false);
+            } else {
+                pop(level > shownCombo / COMBO_MILESTONE);
+            }
             comboTrail.drip();
         } else if (current < shownCombo && shownCombo >= QUACK_COMBO) {
             comboBreak.play();
         }
-        if (!combo.hasActions()) {
+        if (rainbow) {
+            combo.setColor(comboPhase.comboColor());
+        } else if (!combo.hasActions()) {
             combo.setColor(comboTrail.comboColor());
         }
+        comboPhase.setVisible(rainbow);
         boolean burning = level >= ComboTrail.BURNING;
         if (burning != comboThrob.hasActions()) {
             comboThrob.clearActions();
@@ -238,7 +255,7 @@ public class GameScreen extends ScreenAdapter {
         updateCombo();
         listening.setVisible(beat == null && !menu.isVisible());
         bpm.setText(beat == null ? "" : Math.round(60e9 / beat.periodNanos()) + " BPM");
-        renderer.render(board, boardViewport);
+        renderer.render(board, boardViewport, board.getCombo() >= RAINBOW_COMBO);
 
         stage.getViewport().apply();
         stage.act(delta);

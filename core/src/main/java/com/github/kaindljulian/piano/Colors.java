@@ -60,4 +60,11 @@ final class Colors {
 
     private Colors() {
     }
+
+    /** Sets {@code out} to an opaque color at {@code hue} degrees around the rainbow, any number of turns along. */
+    static Color rainbow(Color out, float hue, float saturation, float value) {
+        out.fromHsv((hue % 360 + 360) % 360, saturation, value);
+        out.a = 1;
+        return out;
+    }
 }

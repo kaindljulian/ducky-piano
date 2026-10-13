@@ -97,6 +97,10 @@ class ComboTrail extends Actor {
         }
     }
 
+    void clearParticles() {
+        particles.clear();
+    }
+
     /** The combo text's color at the current level. */
     Color comboColor() {
         return color;
