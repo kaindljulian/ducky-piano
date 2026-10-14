@@ -62,7 +62,7 @@ android {
         }
     }
     defaultConfig {
-        applicationId = "com.github.kaindljulian.piano"
+        applicationId = "com.kaindl.ducky"
         minSdk = 29
         targetSdk = 36
         versionCode = 1
@@ -74,8 +74,22 @@ android {
         encoding = "UTF-8"
         isCoreLibraryDesugaringEnabled = true
     }
+    val uploadStoreFile = providers.gradleProperty("duckyPianoUploadStoreFile").orNull
+    if (uploadStoreFile != null) {
+        signingConfigs {
+            create("upload") {
+                storeFile = file(uploadStoreFile)
+                storePassword = providers.gradleProperty("duckyPianoUploadStorePassword").get()
+                keyAlias = providers.gradleProperty("duckyPianoUploadKeyAlias").get()
+                keyPassword = providers.gradleProperty("duckyPianoUploadKeyPassword").get()
+            }
+        }
+    }
     buildTypes {
         named("release") {
+            if (uploadStoreFile != null) {
+                signingConfig = signingConfigs.getByName("upload")
+            }
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -102,6 +116,6 @@ tasks.register<Exec>("run") {
         "am",
         "start",
         "-n",
-        "com.github.kaindljulian.piano/com.github.kaindljulian.piano.android.AndroidLauncher"
+        "com.kaindl.ducky/com.github.kaindljulian.piano.android.AndroidLauncher"
     )
 }
