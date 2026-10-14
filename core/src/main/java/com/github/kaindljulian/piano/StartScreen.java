@@ -35,16 +35,18 @@ public class StartScreen extends ScreenAdapter {
         title.add(Ui.label(game.skin, "Piano", Colors.TEXT, Sizes.TEXT_TITLE));
 
         TextButton play = new TextButton("Play", game.skin, "accent");
-        Ui.onClick(play, () -> game.switchTo(new GameScreen(game)));
+        Ui.onClick(play, () -> game.switchTo(game.audioSource == null || game.listening
+            ? new GameScreen(game)
+            : new ListenScreen(game)));
 
         Table root = new Table();
         root.setFillParent(true);
         root.add(logo).size(Sizes.LOGO).row();
         root.add(title).padBottom(48).row();
         root.add(play).size(Sizes.MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).row();
-        if (game.selectAudioSource != null) {
+        if (game.audioSource != null) {
             TextButton source = new TextButton("Audio Source", game.skin);
-            Ui.onClick(source, game.selectAudioSource);
+            Ui.onClick(source, () -> game.switchTo(new ListenScreen(game)));
             root.add(source).size(Sizes.MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).padTop(16).row();
         }
         TextButton best = new TextButton("Best Scores", game.skin);

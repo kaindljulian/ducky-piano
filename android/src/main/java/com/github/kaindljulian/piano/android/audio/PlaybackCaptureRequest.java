@@ -1,12 +1,10 @@
 package com.github.kaindljulian.piano.android.audio;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -18,7 +16,6 @@ import com.badlogic.gdx.backends.android.AndroidEventListener;
  * for a {@link PlaybackCapture}. Android shows its screen sharing consent dialog for this.
  * This class doesn't request the RECORD_AUDIO permission, which the capture also needs.
  */
-@TargetApi(Build.VERSION_CODES.Q)
 public final class PlaybackCaptureRequest {
     public interface Callback {
         /**

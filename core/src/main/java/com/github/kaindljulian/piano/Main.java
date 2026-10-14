@@ -12,15 +12,17 @@ public class Main extends Game {
     private static final String SCORES_KEY = "bestScores";
 
     final MusicAnalyzer music;
-    /** Lets the player pick what to capture again, or null where there's no choice. */
-    final Runnable selectAudioSource;
+    /** Null where the game can listen without asking. */
+    final AudioSource audioSource;
+    /** Whether the player allowed the {@link #audioSource} this session. */
+    boolean listening;
     Skin skin;
     BestScores scores;
     private Preferences preferences;
 
-    public Main(MusicAnalyzer music, Runnable selectAudioSource) {
+    public Main(MusicAnalyzer music, AudioSource audioSource) {
         this.music = music;
-        this.selectAudioSource = selectAudioSource;
+        this.audioSource = audioSource;
     }
 
     @Override

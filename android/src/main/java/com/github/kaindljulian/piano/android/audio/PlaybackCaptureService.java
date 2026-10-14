@@ -1,6 +1,5 @@
 package com.github.kaindljulian.piano.android.audio;
 
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -22,7 +21,6 @@ import java.util.Objects;
  * The foreground service Android requires while an app holds the {@link MediaProjection} isntance.
  * {@link PlaybackCaptureRequest} starts it, and it stops itself when the projection stops.
  */
-@TargetApi(Build.VERSION_CODES.Q)
 public class PlaybackCaptureService extends Service {
     static final String EXTRA_RESULT_CODE = "resultCode";
     static final String EXTRA_RESULT_DATA = "resultData";

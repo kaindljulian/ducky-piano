@@ -1,13 +1,11 @@
 package com.github.kaindljulian.piano.android.audio;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioPlaybackCaptureConfiguration;
 import android.media.AudioRecord;
 import android.media.projection.MediaProjection;
-import android.os.Build;
 import android.os.Process;
 
 import com.github.kaindljulian.piano.audio.AudioCapture;
@@ -16,7 +14,6 @@ import com.github.kaindljulian.piano.audio.AudioCapture;
  * Captures audio using the AudioPlaybackCapture API (Android 10+).
  * Needs the RECORD_AUDIO permission and a {@link MediaProjection} from {@link PlaybackCaptureRequest}.
  */
-@TargetApi(Build.VERSION_CODES.Q)
 public class PlaybackCapture implements AudioCapture {
     public static final int DEFAULT_SAMPLE_RATE = 44100;
     public static final int DEFAULT_CHANNEL_COUNT = 2;
