@@ -65,8 +65,8 @@ android {
         applicationId = "com.kaindl.ducky"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
@@ -94,6 +94,10 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+}
+
+base {
+    archivesName = "ducky-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}"
 }
 
 dependencies {
