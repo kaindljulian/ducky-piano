@@ -45,8 +45,11 @@ public class StartScreen extends ScreenAdapter {
         if (game.selectAudioSource != null) {
             TextButton source = new TextButton("Audio Source", game.skin);
             Ui.onClick(source, game.selectAudioSource);
-            root.add(source).size(Sizes.MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).padTop(16);
+            root.add(source).size(Sizes.MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).padTop(16).row();
         }
+        TextButton best = new TextButton("Best Scores", game.skin);
+        Ui.onClick(best, () -> game.switchTo(new ScoresScreen(game)));
+        root.add(best).size(Sizes.MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).padTop(16);
         stage.addActor(root);
 
         Image heartImage = new Image(heart);

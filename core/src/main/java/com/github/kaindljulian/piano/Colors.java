@@ -31,7 +31,6 @@ final class Colors {
     static final Color ACCENT_TEXT = new Color(0.07f, 0.09f, 0.2f, 1f);
     static final Color BUTTON = new Color(0.12f, 0.16f, 0.34f, 1f);
     static final Color BUTTON_DOWN = new Color(0.18f, 0.24f, 0.5f, 1f);
-    static final Color KNOB = new Color(Color.WHITE);
     static final Color OVERLAY = new Color(0.02f, 0.03f, 0.1f, 0.8f);
     static final Color TEXT = new Color(Color.WHITE);
     static final Color MUTED = new Color(0.5f, 0.58f, 0.8f, 1f);

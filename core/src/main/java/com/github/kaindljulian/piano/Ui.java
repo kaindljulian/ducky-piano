@@ -5,19 +5,15 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 /**
@@ -30,7 +26,6 @@ final class Ui {
     private static final int FONT_RASTER_SIZE = 128;
     private static final int CIRCLE_PIXELS = 128;
     /** The circle a rounded bar is stretched from. Small, so its ends stay smooth when scaled down. */
-    private static final int PILL_PIXELS = 32;
     private static final int DUCK_PIXELS = 256;
 
     /** A shape for {@link #texture}, given coordinates from -1 to 1 across the texture with y pointing up. */
@@ -50,7 +45,6 @@ final class Ui {
         skin.add("white", new Texture(pixmap));
         pixmap.dispose();
         skin.add("circle", texture(CIRCLE_PIXELS, Ui::inCircle));
-        skin.add("pill", texture(PILL_PIXELS, Ui::inCircle));
         for (Duck.Part part : Duck.Part.values()) {
             skin.add(duckTexture(part), texture(DUCK_PIXELS, part::contains));
         }
@@ -88,29 +82,7 @@ final class Ui {
         accent.fontColor = Colors.ACCENT_TEXT;
         skin.add("accent", accent);
 
-        Slider.SliderStyle slider = new Slider.SliderStyle(bar(skin, Colors.BUTTON), circle(skin, Colors.KNOB, Sizes.KNOB));
-        slider.knobBefore = bar(skin, Colors.ACCENT);
-        slider.knobDown = circle(skin, Colors.KNOB, Sizes.KNOB_DOWN);
-        skin.add("default-horizontal", slider);
-
         return skin;
-    }
-
-    /** A bar with round ends, {@link Sizes#TRACK_HEIGHT} tall. */
-    private static Drawable bar(Skin skin, Color color) {
-        int corner = PILL_PIXELS / 2 - 1;
-        NinePatch patch = new NinePatch(skin.get("pill", Texture.class), corner, corner, corner, corner);
-        patch.scale(Sizes.TRACK_HEIGHT / 2 / corner, Sizes.TRACK_HEIGHT / 2 / corner);
-        Drawable bar = new NinePatchDrawable(patch).tint(color);
-        bar.setMinHeight(Sizes.TRACK_HEIGHT);
-        return bar;
-    }
-
-    private static Drawable circle(Skin skin, Color color, float size) {
-        Drawable circle = skin.newDrawable("circle", color);
-        circle.setMinWidth(size);
-        circle.setMinHeight(size);
-        return circle;
     }
 
     /** A white texture of a shape, with its edge smoothed by sampling each pixel 4x4. */

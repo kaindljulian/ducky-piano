@@ -20,11 +20,10 @@ final class Sizes {
     static final float PAUSE_MENU_BUTTON_WIDTH = 220;
     static final float BUTTON_HEIGHT = 60;
     static final float PAUSE_BUTTON = 56;
-    static final float SLIDER_WIDTH = 160;
-    static final float SLIDER_VALUE_WIDTH = 44;
-    static final float TRACK_HEIGHT = 8;
-    static final float KNOB = 26;
-    static final float KNOB_DOWN = 30;
+    /** The rank, combo and date columns of the best scores. */
+    static final float SCORE_RANK_WIDTH = 40;
+    static final float SCORE_COMBO_WIDTH = 80;
+    static final float SCORE_DATE_WIDTH = 200;
     static final float COMBO_WIDTH = 240;
     static final float COMBO_HEIGHT = 90;
     static final float SPARKLE_MIN = 3;

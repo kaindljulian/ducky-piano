@@ -7,16 +7,13 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Container;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.github.kaindljulian.piano.audio.Beat;
@@ -30,12 +27,9 @@ public class GameScreen extends ScreenAdapter {
     private static final int RAINBOW_COMBO = 1000;
     /** Smaller combos break without a quack. */
     private static final int QUACK_COMBO = 30;
-    /**
-     * Each milestone up to {@link #RAINBOW_COMBO} makes the board scroll this much faster, and raises the lowest
-     * density the slider allows by as much, so the player can't turn it back down.
-     */
+    /** Each milestone up to {@link #RAINBOW_COMBO} makes the board scroll this much faster, and adds as much density. */
     private static final float MILESTONE_SPEEDUP = 0.1f;
-    private static final float MIN_DENSITY = 1;
+    /** The chart can't go denser than a tile on every 8th note. */
     private static final float MAX_DENSITY = 2;
     /** How quickly the scroll speed eases to a new speed, as the share of the gap closed per second. */
     private static final float SPEED_EASING = 4;
@@ -129,36 +123,19 @@ public class GameScreen extends ScreenAdapter {
         menu.clear();
         menu.add(new Label("Paused", skin)).padBottom(48).row();
 
-        Label densityValue = new Label(densityText(), skin);
-        Slider densitySlider = new Slider(MIN_DENSITY, MAX_DENSITY, 0.1f, false, skin);
-        densitySlider.setValue(density());
-        densitySlider.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                // Sets the value back up, which fires this again. Snapping to steps can land a hair below.
-                if (densitySlider.getValue() < lowestDensity() - 0.01f) {
-                    densitySlider.setValue(lowestDensity());
-                    return;
-                }
-                game.tilesPerBeat = densitySlider.getValue();
-                applyDensity();
-                densityValue.setText(densityText());
-            }
-        });
-        Table densityRow = new Table();
-        densityRow.add(densitySlider).width(Sizes.SLIDER_WIDTH).padRight(16);
-        densityRow.add(densityValue).width(Sizes.SLIDER_VALUE_WIDTH);
-        menu.add(densityRow).padBottom(32).row();
-
         addMenuButton("Resume", this::closeMenu);
         addMenuButton("Restart", () -> {
+            game.recordScore(shownCombo);
             shownCombo = 0;
             boostedMilestones = 0;
             board = newBoard();
             applyDensity();
             closeMenu();
         });
-        addMenuButton("Main menu", () -> game.switchTo(new StartScreen(game)));
+        addMenuButton("Main menu", () -> {
+            game.recordScore(shownCombo);
+            game.switchTo(new StartScreen(game));
+        });
         menu.setVisible(true);
         pauseButton.setVisible(false);
     }
@@ -181,13 +158,9 @@ public class GameScreen extends ScreenAdapter {
         density.setText(densityText());
     }
 
-    /** The player's density, unless the combo's milestones forced it higher. */
+    /** Tiles per beat, going up with the combo's milestones. */
     private float density() {
-        return Math.max(game.tilesPerBeat, lowestDensity());
-    }
-
-    private float lowestDensity() {
-        return Math.min(MIN_DENSITY + MILESTONE_SPEEDUP * boostedMilestones, MAX_DENSITY);
+        return Math.min(1 + MILESTONE_SPEEDUP * boostedMilestones, MAX_DENSITY);
     }
 
     /** Off-beat tiles need a row of their own, so any density above 1 gets a row on every 8th note. */
@@ -223,8 +196,11 @@ public class GameScreen extends ScreenAdapter {
                 pop(level > shownCombo / COMBO_MILESTONE);
             }
             comboTrail.drip();
-        } else if (current < shownCombo && shownCombo >= QUACK_COMBO) {
-            comboBreak.play();
+        } else if (current < shownCombo) {
+            game.recordScore(shownCombo);
+            if (shownCombo >= QUACK_COMBO) {
+                comboBreak.play();
+            }
         }
         if (rainbow) {
             combo.setColor(comboPhase.comboColor());
