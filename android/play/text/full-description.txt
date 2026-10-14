@@ -1,0 +1,13 @@
+Ducky Piano turns the music on your phone into a tile game. Start a song in your favorite music app, open Ducky Piano, and tap the tiles as they scroll down to the beat. The game listens to the song while it plays, so any song you put on becomes a new level.
+
+How it works
+Ducky Piano finds the beat and tempo of the song as you play. Tiles land on the beats, and long notes turn into tiles you hold down. When the song changes speed, the tiles change with it. The current tempo is shown in the corner.
+
+Combos
+Every tile you hit in a row adds to your combo. Every 100 hits, the board gets faster and the tiles get denser. Keep going to 1000 and the board turns rainbow. Lose a big combo and the duck quacks at you.
+
+Best scores
+Your 100 best combos are saved on your phone, with the date you reached each one.
+
+What you need
+Ducky Piano needs music playing in another app on the same phone, like a music player or a streaming app. Some apps block other apps from hearing their sound, so if the tiles don't start, try a different music app.

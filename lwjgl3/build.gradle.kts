@@ -32,6 +32,14 @@ tasks.register<JavaExec>("exportIcons") {
     workingDir = rootDir
 }
 
+tasks.register<JavaExec>("screenshots") {
+    description = "Plays the game with a bot and saves the Google Play phone screenshots."
+    mainClass = "com.github.kaindljulian.piano.lwjgl3.ScreenshotLauncher"
+    classpath = sourceSets["main"].runtimeClasspath
+    workingDir = rootDir
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+}
+
 tasks.jar {
     archiveFileName = "$appName-$projectVersion.jar"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
