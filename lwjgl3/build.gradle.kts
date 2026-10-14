@@ -21,7 +21,7 @@ dependencies {
 }
 
 tasks.named<JavaExec>("run") {
-    workingDir = rootProject.file("assets")
+    workingDir = rootDir
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 

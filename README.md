@@ -1,33 +1,87 @@
-# Ducky Piano
+![Ducky Piano](android/play/feature-graphic.png)
 
-A simplified version of a [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
+Ducky Piano is a tile tapping game that generates its levels from whatever music (or audio in general) is playing on the
+phone. It's built
+with [libGDX](https://libgdx.com/) and consists of three Gradle projects:
 
-## Platforms
+- `core`, the shared code. Game mechanics and music analysis.
+- `lwjgl3`, the desktop build, used for development and generatign assets.
+- `android`, the android specific APIs and build scripts. Utilizing the
+  [AudioPlaybackCapture API](https://developer.android.com/media/platform/av-capture#capture_audio_playback).
 
-- `core`: Main module with the application logic shared by all platforms.
-- `lwjgl3`: Primary desktop platform using LWJGL3; was called 'desktop' in older docs.
-- `android`: Android mobile platform. Needs Android SDK.
+# Development setup
 
-## Gradle
+You need JDK 21. For the Android build you also need the Android SDK with platform 36. Point Gradle at the SDK in
+`local.properties`.
 
-This project uses [Gradle](https://gradle.org/) to manage dependencies.
-The Gradle wrapper was included, so you can run Gradle tasks using `gradlew.bat` or `./gradlew` commands.
-Useful Gradle tasks and flags:
+```properties
+sdk.dir=~/Android/Sdk
+```
 
-- `--continue`: when using this flag, errors will not stop the tasks from running.
-- `--daemon`: thanks to this flag, Gradle daemon will be used to run chosen tasks.
-- `--offline`: when using this flag, cached dependency archives will be used.
-- `--refresh-dependencies`: this flag forces validation of all dependencies. Useful for snapshot versions.
-- `android:lint`: performs Android project validation.
-- `build`: builds sources and archives of every project.
-- `cleanEclipse`: removes Eclipse project data.
-- `cleanIdea`: removes IntelliJ project data.
-- `clean`: removes `build` folders, which store compiled classes and built archives.
-- `eclipse`: generates Eclipse project data.
-- `idea`: generates IntelliJ project data.
-- `lwjgl3:jar`: builds application's runnable jar, which can be found at `lwjgl3/build/libs`.
-- `lwjgl3:run`: starts the application.
-- `test`: runs unit tests (if any).
+Run the unit tests with:
 
-Note that most tasks that are not specific to a single project can be run with `name:` prefix, where the `name` should be replaced with the ID of a specific project.
-For example, `core:clean` removes `build` folder only from the `core` project.
+```bash
+./gradlew core:test
+```
+
+## Desktop
+
+The desktop build can't capture other apps, so it plays a WAV file and makes tiles from that. Pass the file as an
+argument, relative to the project root.
+
+```bash
+./gradlew lwjgl3:run --args="core/src/test/resources/piano-loop-120-bpm.wav"
+```
+
+Without a file the game runs, but the board stays on "Listening..." state.
+
+To build a runnable jar, which lands in `lwjgl3/build/libs/`:
+
+```bash
+./gradlew lwjgl3:jar
+```
+
+## Android
+
+Connect a phone with USB debugging turned on, or start an emulator. Then install and launch the debug build:
+
+```bash
+./gradlew android:installDebug
+./gradlew android:run
+```
+
+Audio capture needs Android 10 (API 29) or later. Start a song in another app and
+the tiles should generate. Some apps block capture, so if nothing happens, check if it blocks the AudioPlaybackCapture
+API.
+
+# Release steps
+
+1. **Set up signing once.** Release builds are signed with the upload key defined in
+   `~/.gradle/gradle.properties`:
+
+   ```properties
+   duckyPianoUploadStoreFile=~/.android/ducky-piano-upload.jks
+   duckyPianoUploadStorePassword=...
+   duckyPianoUploadKeyAlias=upload
+   duckyPianoUploadKeyPassword=...
+   ```
+
+2. **Raise the version.** In `android/build.gradle.kts`, increase `versionCode` by one and update `versionName`. Google
+   Play refuses a version code it has already seen.
+
+3. **Build and check the bundle.**
+
+   ```bash
+   ./gradlew core:test android:lint android:bundleRelease
+   jarsigner -verify android/build/outputs/bundle/release/android-release.aab
+   ```
+
+   The bundle is `android/build/outputs/bundle/release/android-release.aab`
+
+4. **Update the store listing if anything changed.** Everything for the listing is in `android/play/`:
+
+    - `./gradlew lwjgl3:exportIcons`
+    - `./gradlew lwjgl3:screenshots`
+    - `text/` holds the short and full description.
+
+5. **Upload** the `.aab` in the Play Console as a new release, then add release notes.
