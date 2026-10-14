@@ -18,10 +18,11 @@ import com.badlogic.gdx.utils.ScreenUtils;
 public class ListenScreen extends ScreenAdapter {
     private static final String EXPLANATION =
             """
-                    Ducky Piano makes its tiles from music playing in another app, like your music player.
-                    
-                    Android will ask to record audio and to share your screen. The game only uses the sound. \
-                    It stays on your phone and is never saved or sent.""";
+                    Ducky Piano listens to the music playing on your phone to make matching tiles. \
+                    It keeps listening while the game is open, even when you switch to your music app.
+
+                    Android will ask to record audio and to share your screen. The game only uses the sound, \
+                    not the microphone or your screen. Nothing is saved or shared.""";
     private static final String DENIED =
             """
                     Without both permissions there's no music to play along to.
@@ -31,16 +32,18 @@ public class ListenScreen extends ScreenAdapter {
 
     private final Stage stage = Ui.createStage();
 
-    ListenScreen(Main game) {
+    /** @param denied whether the player just said no to Android's prompts */
+    ListenScreen(Main game, boolean denied) {
         Skin skin = game.skin;
-        Label message = Ui.label(skin, EXPLANATION, Colors.TEXT, Sizes.TEXT_SMALL);
+        Label message = Ui.label(skin, denied ? DENIED : EXPLANATION, Colors.TEXT, Sizes.TEXT_SMALL);
         message.setWrap(true);
         message.setAlignment(Align.center);
 
-        TextButton allow = new TextButton("Continue", skin, "accent");
+        TextButton allow = new TextButton(denied ? "Try again" : "Continue", skin, "accent");
         Ui.onClick(allow, () -> game.audioSource.request(allowed -> Gdx.app.postRunnable(() -> {
             game.listening = allowed;
             if (allowed) {
+                game.markExplained();
                 game.switchTo(new GameScreen(game));
             } else {
                 message.setText(DENIED);

@@ -61,6 +61,8 @@ public class GameScreen extends ScreenAdapter {
      * instead: fewer cells fit on screen and each one passes by quicker.
      */
     private float speed = 1;
+    /** Whether Android's audio prompts are showing, which pauses the app without the player leaving. */
+    private boolean requesting;
 
     GameScreen(Main game) {
         this.game = game;
@@ -242,6 +244,16 @@ public class GameScreen extends ScreenAdapter {
 
     @Override
     public void show() {
+        if (game.audioSource != null && !game.listening) {
+            requesting = true;
+            game.audioSource.request(allowed -> Gdx.app.postRunnable(() -> {
+                requesting = false;
+                game.listening = allowed;
+                if (!allowed) {
+                    game.switchTo(new ListenScreen(game, true));
+                }
+            }));
+        }
         // The stage goes first so taps on its buttons never reach the board.
         Gdx.input.setInputProcessor(new InputMultiplexer(stage, new InputAdapter() {
             @Override
@@ -292,7 +304,7 @@ public class GameScreen extends ScreenAdapter {
      */
     @Override
     public void pause() {
-        if (!menu.isVisible()) openMenu();
+        if (!menu.isVisible() && !requesting) openMenu();
     }
 
     @Override

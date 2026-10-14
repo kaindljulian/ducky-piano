@@ -54,7 +54,7 @@
   <p class="date">Last updated October 14, 2026</p>
 
   <p>This policy covers Ducky Piano, the Android game published on Google Play under the package name
-    com.kaindl.ducky by Julian Kaindl. In short, the game does not collect, store or share any personal data.
+    com.kaindl.ducky by the developer kaindl. In short, the game does not collect, store or share any personal data.
     Nothing it hears or records ever leaves your phone.</p>
 
   <h2>Audio from other apps</h2>
@@ -66,38 +66,72 @@
     <li><strong>Screen sharing consent.</strong> Android uses its screen sharing prompt to let an app capture other
       apps' audio. Ducky Piano only uses the sound. It never captures, records or looks at what is on your screen.</li>
   </ul>
-  <p>The game analyzes that audio in memory, while you play, to find the beat and tempo. It never saves the audio
-    to a file and never sends it anywhere. When you stop playing, or stop the capture from Android's status bar, the
-    game stops listening.</p>
-  <p>Android shows a notification and a status bar indicator for as long as the game is listening.</p>
+  <p>The game analyzes that audio in memory to find the beat and tempo. It never saves the audio to a file and
+    never sends it anywhere.</p>
+  <p>The first time you press Play, the game explains all this and only asks Android after you tap Continue. After
+    that, Play goes straight to Android's screen sharing prompt, because Android asks again each time. You can read
+    the explanation again under Audio Source in the main menu. The game keeps listening while it is
+    open, including when you switch to your music app to pick a song. That's how it hears the music. It stops when
+    you close the game, or when you stop the screen sharing from Android's status bar or quick settings. While it
+    listens, Android shows that the screen is being shared.</p>
 
   <h2>Data stored on your phone</h2>
-  <p>The game saves your best scores, which are each combo you reached and the date and time you reached it. This
-    list stays in the game's own storage on your phone. If you use Android's built-in backup, Android may include the
-    list in your device backup with Google, the same as for other apps. Uninstalling the game deletes the list.</p>
+  <p>The game saves your best scores, which are each combo you reached and the date and time you reached it. It
+    keeps up to 100 of them. They are stored in the game's private storage on your phone, which other apps can't
+    read.</p>
+  <p>If you turned on Android's backup, Android may include this list in your device backup to your Google account,
+    the same as for other apps. Google handles that backup under its own policy.</p>
 
-  <h2>What the game doesn't do</h2>
+  <h2>Keeping data safe</h2>
+  <p>The audio only ever exists in the game's memory, a fraction of a second at a time, and is gone when the game
+    stops listening. The scores list lives in storage that Android keeps private to the game. Nothing is sent over the
+    internet, so nothing can be intercepted on the way.</p>
+
+  <h2>How long data is kept and how to delete it</h2>
   <ul>
-    <li>It has no internet access, because it doesn't request Android's internet permission.</li>
-    <li>It has no accounts, sign-in, ads, analytics, crash reporting or in-app purchases.</li>
-    <li>It doesn't share data with anyone, because it doesn't collect any.</li>
+    <li><strong>Audio.</strong> Not kept. The game overwrites each fraction of a second of audio with the next one as
+      soon as it has analyzed it. To place tiles, it remembers how loud each pitch range was over the last few
+      seconds. Those numbers aren't a recording, and they are gone when you close the game.</li>
+    <li><strong>Best scores.</strong> Kept on your phone until you delete them. To delete them, uninstall the game or
+      clear its storage in Android's settings, under Apps, then Ducky Piano, then Storage. To remove a copy in
+      your Google backup, delete the backup in your Google account settings.</li>
   </ul>
+  <p>The game has no accounts, so there is no account to delete. The developer never receives any of your data, so
+    there is nothing to delete on the developer's side.</p>
+
+  <h2>Who data is shared with</h2>
+  <p>Nobody. The game doesn't request Android's internet permission, so it can't send data anywhere. It has no ads,
+    analytics, crash reporting, sign-in or in-app purchases, and it doesn't sell data. It doesn't use advertising
+    IDs, the App Set ID or any other device identifier.</p>
+  <p>The game is built with libGDX, an open source game framework. libGDX runs inside the game and doesn't collect
+    or send data. The game contains no other third-party code.</p>
 
   <h2>Google Play</h2>
   <p>Google runs Google Play, which handles downloads, updates and reviews. Google may collect data about that under
     its own <a href="https://policies.google.com/privacy">privacy policy</a>. Ducky Piano doesn't receive that
     data.</p>
 
-  <h2>Children</h2>
-  <p>Ducky Piano is not directed at children under 13. It collects no data from anyone, including children.</p>
+  <h2>Children and parents</h2>
+  <p>Ducky Piano is made for players aged 9 and up, including children under 13. It works the same for every
+    player, and it doesn't ask for anyone's age.</p>
+  <p>The game collects no personal information from children or from anyone else. It has no chat, no profiles and
+    no way to contact other players. It also has no ads, no purchases and no tracking, and no third party receives
+    anything from it. Because it collects nothing, it has no children's data to handle under laws like the
+    Children's Online Privacy Protection Act (COPPA) or the GDPR.</p>
+  <p>Parents should know about the two Android prompts described above. A child sees them when they first press Play.
+    The game uses them only to hear the music playing on the phone. Saying no to either prompt is safe, and the game
+    then won't have music to play along to.</p>
+  <p>To delete everything the game has stored, which is only the best scores list, uninstall the game or clear its
+    storage in Android's app settings, as described above. Parents with questions can write to the contact address
+    below.</p>
 
   <h2>Changes</h2>
   <p>If this policy changes, the new version goes on this page with a new date at the top. If a future version of the
     game starts to collect data, this policy will be updated before that version is released.</p>
 
-  <h2>Contact</h2>
-  <p>Questions about this policy go to Julian Kaindl at
-    <a href="mailto:kaindl745@gmail.com">kaindl745@gmail.com</a>.</p>
+  <h2>Developer and contact</h2>
+  <p>Ducky Piano is made and published by the Google Play developer kaindl (Julian Kaindl). Questions or requests
+    about this policy or your data go to <a href="mailto:kaindl745@gmail.com">kaindl745@gmail.com</a>.</p>
 </main>
 </body>
 </html>

@@ -10,12 +10,15 @@ import com.github.kaindljulian.piano.audio.MusicAnalyzer;
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends Game {
     private static final String SCORES_KEY = "bestScores";
+    private static final String EXPLAINED_KEY = "audioSourceExplained";
 
     final MusicAnalyzer music;
     /** Null where the game can listen without asking. */
     final AudioSource audioSource;
     /** Whether the player allowed the {@link #audioSource} this session. */
     boolean listening;
+    /** Whether the player read why the game listens and allowed it once, so Play can ask right away. */
+    boolean explained;
     Skin skin;
     BestScores scores;
     private Preferences preferences;
@@ -30,6 +33,7 @@ public class Main extends Game {
         skin = Ui.createSkin();
         preferences = Gdx.app.getPreferences("ducky-piano");
         scores = new BestScores(preferences.getString(SCORES_KEY, ""));
+        explained = preferences.getBoolean(EXPLAINED_KEY, false);
         setScreen(new StartScreen(this));
     }
 
@@ -45,6 +49,12 @@ public class Main extends Game {
             preferences.putString(SCORES_KEY, scores.encode());
             preferences.flush();
         }
+    }
+
+    void markExplained() {
+        explained = true;
+        preferences.putBoolean(EXPLAINED_KEY, true);
+        preferences.flush();
     }
 
     /** Switches screens on the next frame, so a screen can safely replace itself from its own input handlers. */
