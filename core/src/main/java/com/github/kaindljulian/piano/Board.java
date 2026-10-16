@@ -8,13 +8,14 @@ import com.badlogic.gdx.utils.IntMap;
 import java.util.Arrays;
 
 /**
- * Tiles on a grid of rows one cell tall, scrolling {@link #setRowsPerBeat rows per beat}. With two rows per beat a
- * beat without an off-beat tile leaves its second row empty. Plain tiles fill one row. Hold tiles are a run of
- * connected rows that the finger goes down in the first of and comes up in the last of, and every row it is dragged
- * through counts as a hit.
+ * Tiles on a grid of rows one cell tall. A beat gets one row or two, and an off-beat tile always goes in the second
+ * row. Plain tiles fill one row. Hold tiles are a run of connected rows that the finger goes down in the first of and
+ * comes up in the last of, and every row it is dragged through counts as a hit.
  * <p>
- * A change of rows per beat changes how fast the board scrolls. The board eases into the new speed, so for a few
- * beats around the change it runs a little ahead of or behind the music.
+ * Each beat passes in time with the music, so a beat with two rows scrolls past twice as fast. The {@link #setSpeed
+ * speed} sets how many beats get two rows, and the second row stays empty when the chart has no off-beat tile for
+ * it. The board eases into each change of speed, so for a few beats around a two-row beat it runs a little ahead of
+ * the music.
  */
 public class Board {
     public enum State { READY, RUNNING }
@@ -51,20 +52,20 @@ public class Board {
     /** The cell each spawned beat starts on, plus where the next one will. */
     private final FloatArray beatCells = FloatArray.with(0);
     private final Array<Ramp> ramps = new Array<>();
-    private int lastRows;
+    private int lastRows = 1;
+    private float speed = 1;
+    /** Builds up by the speed above 1 each beat, and a beat with two rows uses up 1 of it. */
+    private float splitCredit;
     private float scroll;
     private double origin;
     private boolean aligned;
     private State state = State.READY;
     private int combo;
     private Tile wrongTap;
-    private int rowsPerBeat;
 
-    public Board(int lanes, int visibleCells, int rowsPerBeat, Chart chart) {
+    public Board(int lanes, int visibleCells, Chart chart) {
         this.lanes = lanes;
         this.visibleCells = visibleCells;
-        this.rowsPerBeat = rowsPerBeat;
-        lastRows = rowsPerBeat;
         this.chart = chart;
         spawn();
     }
@@ -171,9 +172,9 @@ public class Board {
         return tiles;
     }
 
-    /** Takes effect from the next beat to spawn, so the tiles already there keep their rows. */
-    public void setRowsPerBeat(int rowsPerBeat) {
-        this.rowsPerBeat = rowsPerBeat;
+    /** The average rows per beat, from 1 to 2. Takes effect from the next beat to spawn. */
+    public void setSpeed(float speed) {
+        this.speed = speed;
     }
 
     /** How many beats the board has scrolled so far. */
@@ -235,7 +236,7 @@ public class Board {
         return bottom;
     }
 
-    /** The cell a beat count falls on. Outside the spawned beats, each beat has the current rows per beat. */
+    /** The cell a beat count falls on. Outside the spawned beats, each beat has one row. */
     private float cell(float beat) {
         int index = MathUtils.floor(beat);
         float from = beatCell(index);
@@ -244,10 +245,10 @@ public class Board {
 
     private float beatAt(float cell) {
         if (cell < 0) {
-            return cell / rowsPerBeat;
+            return cell;
         }
         if (cell >= beatCells.peek()) {
-            return nextBeat + (cell - beatCells.peek()) / rowsPerBeat;
+            return nextBeat + cell - beatCells.peek();
         }
         int found = Arrays.binarySearch(beatCells.items, 0, beatCells.size, cell);
         int index = found >= 0 ? found : -found - 2;
@@ -257,10 +258,10 @@ public class Board {
 
     private float beatCell(int beat) {
         if (beat < 0) {
-            return beat * rowsPerBeat;
+            return beat;
         }
         if (beat > nextBeat) {
-            return beatCells.peek() + (beat - nextBeat) * rowsPerBeat;
+            return beatCells.peek() + beat - nextBeat;
         }
         return beatCells.get(beat);
     }
@@ -268,13 +269,17 @@ public class Board {
     /** Keeps the board filled one beat past the top edge, so tiles never pop in on screen. */
     private void spawn() {
         while (beatCells.peek() <= bottom() + visibleCells) {
-            int rows = rowsPerBeat;
+            splitCredit += speed - 1;
+            int rows = splitCredit >= 1 ? 2 : 1;
             for (Note note : chart.notes(nextBeat - scroll)) {
                 tiles.add(new Tile(note.lane(), nextBeat + note.offset(), note.length()));
-                // A bar planned before the density went down can still have off-beat tiles.
                 if (note.offset() > 0) {
                     rows = 2;
                 }
+            }
+            if (rows == 2) {
+                // An off-beat tile can split a beat ahead of schedule. Owing for it would slow the board down after.
+                splitCredit = Math.max(splitCredit - 1, 0);
             }
             // The ramp starts right away, before the beat comes into view.
             if (rows != lastRows) {

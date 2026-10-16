@@ -14,7 +14,7 @@ class BoardTest {
 
     @BeforeEach
     void startOnFirstLane() {
-        board = new Board(4, 4, 1, beatsAhead -> new Note[]{new Note(0, 0, 0)});
+        board = new Board(4, 4, beatsAhead -> new Note[]{new Note(0, 0, 0)});
         board.tap(0.5f, 0.5f, 0);
         board.update(0);
     }
@@ -61,7 +61,7 @@ class BoardTest {
 
     @Test
     void splitBeatsScrollFasterWithTilesOneCellTall() {
-        Board split = new Board(4, 4, 2, beatsAhead -> new Note[]{new Note(0, 0, 0), new Note(1, 0.5f, 0)});
+        Board split = new Board(4, 4, beatsAhead -> new Note[]{new Note(0, 0, 0), new Note(1, 0.5f, 0)});
         split.tap(0.5f, 0.5f, 0);
         split.tap(1.5f, 1.5f, 0);
         split.tap(0.5f, 2.5f, 0);
@@ -71,33 +71,53 @@ class BoardTest {
     }
 
     @Test
-    void moreRowsPerBeatSpeedUpGraduallyAndEndOnTheBeat() {
-        board.setRowsPerBeat(2);
-        float last = board.y(20);
-        for (int i = 1; i <= 200; i++) {
-            board.update(i * 0.05);
-            float y = board.y(20);
-            assertTrue(last - y > 0.05f - 1e-4f && last - y < 0.1f + 1e-4f);
-            last = y;
-        }
+    void speedAddsEmptySecondRowsEvenlyWithoutJumps() {
+        board.setSpeed(1.5f);
 
-        assertEquals(0, board.y(10), 1e-5f);
-        assertEquals(2, board.y(11), 1e-5f);
-    }
-
-    @Test
-    void beatsWithoutAnOffbeatTileLeaveAnEmptyRow() {
-        Board mixed = alternatingSplitBeats(2);
-        mixed.update(0.75);
-
-        for (Tile tile : mixed.getTiles()) {
-            assertEquals(2 * (tile.start - 0.75f), mixed.y(tile.start), 1e-5f);
+        assertEquals(150, cellsPassedInAHundredBeats(board), 1);
+        for (Tile tile : board.getTiles()) {
+            assertEquals(0, tile.start % 1);
         }
     }
 
     @Test
-    void offbeatTilesGetARowEvenWithOneRowPerBeat() {
-        Board mixed = alternatingSplitBeats(1);
+    void offbeatTilesUseUpTheSecondRowsOfTheSpeed() {
+        int[] next = {0};
+        Board sparse = new Board(4, 4, beatsAhead -> next[0]++ % 10 == 5
+            ? new Note[]{new Note(0, 0, 0), new Note(1, 0.5f, 0)}
+            : new Note[]{new Note(0, 0, 0)});
+        sparse.tap(0.5f, 0.5f, 0);
+        sparse.update(0);
+        sparse.setSpeed(1.1f);
+
+        assertEquals(110, cellsPassedInAHundredBeats(sparse), 1);
+    }
+
+    @Test
+    void aBurstOfOffbeatTilesNeverSlowsTheBoardBelowItsSpeed() {
+        int[] next = {0};
+        Board burst = new Board(4, 4, beatsAhead -> {
+            int beat = next[0]++;
+            return beat >= 40 && beat < 46
+                ? new Note[]{new Note(0, 0, 0), new Note(1, 0.5f, 0)}
+                : new Note[]{new Note(0, 0, 0)};
+        });
+        burst.tap(0.5f, 0.5f, 0);
+        burst.update(0);
+        burst.setSpeed(1.4f);
+
+        burst.update(20);
+        float last = burst.y(0);
+        for (int beat = 25; beat <= 120; beat += 5) {
+            burst.update(beat);
+            assertTrue(last - burst.y(0) > 6.5f);
+            last = burst.y(0);
+        }
+    }
+
+    @Test
+    void offbeatTilesGetARowOfTheirOwn() {
+        Board mixed = alternatingSplitBeats();
         mixed.update(0.75);
 
         float first = mixed.y(mixed.getTiles().first().start);
@@ -108,10 +128,10 @@ class BoardTest {
 
     @Test
     void wrongTapSnapsToTheRowGrid() {
-        Board mixed = alternatingSplitBeats(2);
-        mixed.tap(2.5f, 3.4f, 0);
+        Board mixed = alternatingSplitBeats();
+        mixed.tap(2.5f, 1.4f, 0);
 
-        assertEquals(1.5f, mixed.getWrongTap().start);
+        assertEquals(0.5f, mixed.getWrongTap().start);
     }
 
     @Test
@@ -180,10 +200,30 @@ class BoardTest {
         assertEquals(3f, hold.getTiles().get(2).start);
     }
 
+    /** Scrolls from beat 20 to 120 in small steps, checking the speed stays within 1x to 2x and never jumps. */
+    private static float cellsPassedInAHundredBeats(Board board) {
+        float step = 0.05f;
+        board.update(20);
+        float start = board.y(0);
+        float last = start;
+        float lastSpeed = Float.NaN;
+        for (int i = 1; i <= 2000; i++) {
+            board.update(20 + i * step);
+            float speed = (last - board.y(0)) / step;
+            assertTrue(speed > 1 - 1e-3f && speed < 2 + 1e-3f);
+            if (!Float.isNaN(lastSpeed)) {
+                assertTrue(Math.abs(speed - lastSpeed) < 0.05f);
+            }
+            last = board.y(0);
+            lastSpeed = speed;
+        }
+        return start - last;
+    }
+
     /** A split beat with an off-beat tile, then a plain one, and so on. Started at beat 0. */
-    private static Board alternatingSplitBeats(int rowsPerBeat) {
+    private static Board alternatingSplitBeats() {
         int[] next = {0};
-        Board mixed = new Board(4, 4, rowsPerBeat, beatsAhead -> next[0]++ % 2 == 0
+        Board mixed = new Board(4, 4, beatsAhead -> next[0]++ % 2 == 0
             ? new Note[]{new Note(0, 0, 0), new Note(1, 0.5f, 0)}
             : new Note[]{new Note(0, 0, 0)});
         mixed.tap(0.5f, 0.5f, 0);
@@ -195,7 +235,7 @@ class BoardTest {
     private static Board holdOnSecondBeat() {
         Note[][] beats = {{new Note(0, 0, 0)}, {new Note(1, 0, 2)}, {}};
         int[] next = {0};
-        Board hold = new Board(4, 4, 1, beatsAhead -> next[0] < beats.length ? beats[next[0]++] : new Note[]{new Note(0, 0, 0)});
+        Board hold = new Board(4, 4, beatsAhead -> next[0] < beats.length ? beats[next[0]++] : new Note[]{new Note(0, 0, 0)});
         hold.tap(0.5f, 0.5f, 0);
         hold.update(0);
         return hold;

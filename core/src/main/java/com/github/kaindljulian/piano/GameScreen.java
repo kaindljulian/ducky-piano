@@ -7,7 +7,9 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Container;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -27,7 +29,7 @@ public class GameScreen extends ScreenAdapter {
     private static final int RAINBOW_COMBO = 1000;
     /** Smaller combos break without a quack. */
     private static final int QUACK_COMBO = 30;
-    /** Tiles per beat each milestone up to {@link #RAINBOW_COMBO} adds. */
+    /** Each milestone up to {@link #RAINBOW_COMBO} adds this many tiles per beat, and makes the board as much faster. */
     private static final float MILESTONE_DENSITY = 0.1f;
     /** The chart can't go denser than a tile on every 8th note. */
     private static final float MAX_DENSITY = 2;
@@ -63,7 +65,16 @@ public class GameScreen extends ScreenAdapter {
         board = newBoard();
         Skin skin = game.skin;
 
-        pauseButton = new TextButton("II", skin, "round");
+        pauseButton = new TextButton("II", skin, "round") {
+            @Override
+            public Actor hit(float x, float y, boolean touchable) {
+                if (touchable && getTouchable() != Touchable.enabled || !isVisible()) {
+                    return null;
+                }
+                float slop = Sizes.PAUSE_BUTTON_SLOP;
+                return x >= -slop && x < getWidth() + slop && y >= -slop && y < getHeight() + slop ? this : null;
+            }
+        };
         Ui.onClick(pauseButton, this::openMenu);
         bpm = Ui.label(skin, "", Colors.MUTED, Sizes.TEXT_NORMAL);
         density = Ui.label(skin, "", Colors.MUTED, Sizes.TEXT_SMALL);
@@ -114,7 +125,7 @@ public class GameScreen extends ScreenAdapter {
     }
 
     private Board newBoard() {
-        return new Board(LANES, VISIBLE_CELLS, rowsPerBeat(), chart);
+        return new Board(LANES, VISIBLE_CELLS, chart);
     }
 
     private void openMenu() {
@@ -153,18 +164,13 @@ public class GameScreen extends ScreenAdapter {
 
     private void applyDensity() {
         chart.setTilesPerBeat(density());
-        board.setRowsPerBeat(rowsPerBeat());
+        board.setSpeed(density());
         density.setText(densityText());
     }
 
     /** Tiles per beat, going up with the combo's milestones. */
     private float density() {
         return Math.min(1 + MILESTONE_DENSITY * boostedMilestones, MAX_DENSITY);
-    }
-
-    /** Off-beat tiles need a row of their own, so any density above 1 gets a row on every 8th note. */
-    private int rowsPerBeat() {
-        return density() > 1 ? 2 : 1;
     }
 
     private String densityText() {

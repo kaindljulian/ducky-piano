@@ -22,6 +22,8 @@ final class Sizes {
     static final float PAUSE_MENU_BUTTON_WIDTH = 220;
     static final float BUTTON_HEIGHT = 60;
     static final float PAUSE_BUTTON = 56;
+    /** How far past its edge the pause button still takes a tap. */
+    static final float PAUSE_BUTTON_SLOP = 10;
     /** The rank, combo and date columns of the best scores. */
     static final float SCORE_RANK_WIDTH = 40;
     static final float SCORE_COMBO_WIDTH = 80;
