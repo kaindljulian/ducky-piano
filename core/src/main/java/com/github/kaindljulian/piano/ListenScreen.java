@@ -1,6 +1,7 @@
 package com.github.kaindljulian.piano;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -31,13 +32,13 @@ public class ListenScreen extends ScreenAdapter {
     private static final String PRIVACY_POLICY = "https://kaindljulian.github.io/ducky-piano/privacy.html";
 
     private final Stage stage = Ui.createStage();
+    private final Table message = new Table();
+    private final Skin skin;
 
     /** @param denied whether the player just said no to Android's prompts */
     ListenScreen(Main game, boolean denied) {
-        Skin skin = game.skin;
-        Label message = Ui.label(skin, denied ? DENIED : EXPLANATION, Colors.TEXT, Sizes.TEXT_SMALL);
-        message.setWrap(true);
-        message.setAlignment(Align.center);
+        skin = game.skin;
+        showMessage(denied ? DENIED : EXPLANATION);
 
         TextButton allow = new TextButton(denied ? "Try again" : "Continue", skin, "accent");
         Ui.onClick(allow, () -> game.audioSource.request(allowed -> Gdx.app.postRunnable(() -> {
@@ -46,7 +47,7 @@ public class ListenScreen extends ScreenAdapter {
                 game.markExplained();
                 game.switchTo(new GameScreen(game));
             } else {
-                message.setText(DENIED);
+                showMessage(DENIED);
                 allow.setText("Try again");
             }
         })));
@@ -59,21 +60,34 @@ public class ListenScreen extends ScreenAdapter {
         });
         TextButton back = new TextButton("Back", skin);
         Ui.onClick(back, () -> game.switchTo(new StartScreen(game)));
+        Ui.onBack(stage, () -> game.switchTo(new StartScreen(game)));
 
         Table root = new Table();
         root.setFillParent(true);
         root.pad(32, 24, 24, 24);
-        root.add(Ui.label(skin, "Audio Source", Colors.TEXT, Sizes.TEXT_TITLE)).padBottom(24).row();
-        root.add(message).width(Sizes.UI_WIDTH - 48).expandY().row();
+        root.add(Ui.label(skin, "Audio Source", Colors.TEXT, Sizes.TEXT_HEADING)).padBottom(24).row();
+        root.add(message).width(Sizes.UI_WIDTH - 48).expandY().top().row();
         root.add(privacy).padBottom(24).row();
         root.add(allow).size(Sizes.MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).row();
         root.add(back).size(Sizes.MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).padTop(16);
         stage.addActor(root);
     }
 
+    /** Left aligned paragraphs read better than one centered block. */
+    private void showMessage(String text) {
+        message.clear();
+        for (String paragraph : text.split("\n\n")) {
+            Label label = Ui.label(skin, paragraph, Colors.TEXT, Sizes.TEXT_SMALL);
+            label.setWrap(true);
+            label.setAlignment(Align.left);
+            message.add(label).growX().padBottom(Sizes.PARAGRAPH_GAP).row();
+        }
+    }
+
     @Override
     public void show() {
         Gdx.input.setInputProcessor(stage);
+        Gdx.input.setCatchKey(Input.Keys.BACK, true);
     }
 
     @Override

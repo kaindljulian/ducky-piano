@@ -9,12 +9,14 @@ final class Sizes {
     static final float UI_WIDTH = 360;
     static final float UI_HEIGHT = 640;
     /** Text height. */
-    static final float FONT_SIZE = 28;
-    static final float TEXT_LARGE = 2;
-    static final float TEXT_TITLE = 1.7f;
+    static final float FONT_SIZE = 20;
+    static final float TEXT_LARGE = 2.8f;
+    static final float TEXT_TITLE = 2.4f;
+    /** The heading of each screen below the start screen. */
+    static final float TEXT_HEADING = 1.4f;
     static final float TEXT_NORMAL = 1;
-    static final float TEXT_SMALL = 0.7f;
-    static final float TEXT_TINY = 0.6f;
+    static final float TEXT_SMALL = 0.8f;
+    static final float TEXT_TINY = 0.7f;
 
     static final float MENU_BUTTON_WIDTH = 240;
     static final float PAUSE_MENU_BUTTON_WIDTH = 220;
@@ -24,6 +26,10 @@ final class Sizes {
     static final float SCORE_RANK_WIDTH = 40;
     static final float SCORE_COMBO_WIDTH = 80;
     static final float SCORE_DATE_WIDTH = 200;
+    /** Space above and below each best score. */
+    static final float SCORE_ROW_PAD = 12;
+    /** Space between the paragraphs of longer text. */
+    static final float PARAGRAPH_GAP = 14;
     static final float COMBO_WIDTH = 240;
     static final float COMBO_HEIGHT = 90;
     static final float SPARKLE_MIN = 3;

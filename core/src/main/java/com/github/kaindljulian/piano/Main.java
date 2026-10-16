@@ -2,6 +2,7 @@ package com.github.kaindljulian.piano;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -55,6 +56,13 @@ public class Main extends Game {
         explained = true;
         preferences.putBoolean(EXPLAINED_KEY, true);
         preferences.flush();
+    }
+
+    /** Back leaves the app unless the new screen catches it again in its {@link Screen#show()}. */
+    @Override
+    public void setScreen(Screen screen) {
+        Gdx.input.setCatchKey(Input.Keys.BACK, false);
+        super.setScreen(screen);
     }
 
     /** Switches screens on the next frame, so a screen can safely replace itself from its own input handlers. */

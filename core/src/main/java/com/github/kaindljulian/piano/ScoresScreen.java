@@ -1,8 +1,10 @@
 package com.github.kaindljulian.piano;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -27,11 +29,15 @@ public class ScoresScreen extends ScreenAdapter {
         list.top();
         int rank = 1;
         for (BestScores.Score score : game.scores.list()) {
-            list.add(Ui.label(skin, rank++ + ".", Colors.MUTED, Sizes.TEXT_SMALL)).width(Sizes.SCORE_RANK_WIDTH);
+            if (rank > 1) {
+                list.add(new Image(skin.newDrawable("white", Colors.LANE_LINE))).colspan(3).height(1).fillX().row();
+            }
+            list.add(Ui.label(skin, rank++ + ".", Colors.MUTED, Sizes.TEXT_SMALL))
+                .width(Sizes.SCORE_RANK_WIDTH).left().padTop(Sizes.SCORE_ROW_PAD).padBottom(Sizes.SCORE_ROW_PAD);
             list.add(Ui.label(skin, String.valueOf(score.combo()), Colors.ACCENT, Sizes.TEXT_NORMAL))
-                .width(Sizes.SCORE_COMBO_WIDTH);
-            list.add(Ui.label(skin, DATE.format(Instant.ofEpochMilli(score.time())), Colors.TEXT, Sizes.TEXT_SMALL))
-                .width(Sizes.SCORE_DATE_WIDTH).row();
+                .width(Sizes.SCORE_COMBO_WIDTH).left();
+            list.add(Ui.label(skin, DATE.format(Instant.ofEpochMilli(score.time())), Colors.MUTED, Sizes.TEXT_SMALL))
+                .width(Sizes.SCORE_DATE_WIDTH).right().row();
         }
         if (game.scores.list().isEmpty()) {
             list.add(Ui.label(skin, "No scores yet", Colors.MUTED, Sizes.TEXT_NORMAL));
@@ -42,11 +48,12 @@ public class ScoresScreen extends ScreenAdapter {
 
         TextButton back = new TextButton("Back", skin);
         Ui.onClick(back, () -> game.switchTo(new StartScreen(game)));
+        Ui.onBack(stage, () -> game.switchTo(new StartScreen(game)));
 
         Table root = new Table();
         root.setFillParent(true);
         root.pad(32, 16, 24, 16);
-        root.add(Ui.label(skin, "Best Scores", Colors.TEXT, Sizes.TEXT_TITLE)).padBottom(24).row();
+        root.add(Ui.label(skin, "Best Scores", Colors.TEXT, Sizes.TEXT_HEADING)).padBottom(24).row();
         root.add(scroll).expand().fill().align(Align.top).row();
         root.add(back).size(Sizes.MENU_BUTTON_WIDTH, Sizes.BUTTON_HEIGHT).padTop(16);
         stage.addActor(root);
@@ -56,6 +63,7 @@ public class ScoresScreen extends ScreenAdapter {
     @Override
     public void show() {
         Gdx.input.setInputProcessor(stage);
+        Gdx.input.setCatchKey(Input.Keys.BACK, true);
     }
 
     @Override

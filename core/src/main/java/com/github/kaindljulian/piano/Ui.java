@@ -1,12 +1,15 @@
 package com.github.kaindljulian.piano;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -141,6 +144,20 @@ final class Ui {
 
     static Stage createStage() {
         return new Stage(new ExtendViewport(Sizes.UI_WIDTH, Sizes.UI_HEIGHT));
+    }
+
+    /** Runs the action on Android's back button or gesture, or Escape on desktop. The screen must catch back in show. */
+    static void onBack(Stage stage, Runnable action) {
+        stage.addListener(new InputListener() {
+            @Override
+            public boolean keyDown(InputEvent event, int keycode) {
+                if (keycode != Input.Keys.BACK && keycode != Input.Keys.ESCAPE) {
+                    return false;
+                }
+                action.run();
+                return true;
+            }
+        });
     }
 
     static void onClick(Actor actor, Runnable action) {

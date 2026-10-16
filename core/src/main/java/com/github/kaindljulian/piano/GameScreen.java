@@ -123,7 +123,7 @@ public class GameScreen extends ScreenAdapter {
     private void openMenu() {
         Skin skin = game.skin;
         menu.clear();
-        menu.add(new Label("Paused", skin)).padBottom(48).row();
+        menu.add(Ui.label(skin, "Paused", Colors.TEXT, Sizes.TEXT_HEADING)).padBottom(48).row();
 
         addMenuButton("Resume", this::closeMenu);
         addMenuButton("Restart", () -> {
