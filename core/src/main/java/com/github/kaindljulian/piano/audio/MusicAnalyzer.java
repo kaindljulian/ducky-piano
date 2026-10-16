@@ -7,6 +7,12 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
     private static final float SILENCE_SECONDS = 1;
     private static final int HISTORY = 1024;
 
+    private record Window(long from, long to) {
+        long size() {
+            return to - from + 1;
+        }
+    }
+
     private final int sampleRate;
     private final int channelCount;
     private final double nanosPerSample;
@@ -65,45 +71,39 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
      * history. Returns null if that time isn't in the history.
      */
     public synchronized float[] bandRise(long nanos, long halfWidthNanos) {
-        long center = frameAt(nanos);
-        long halfWidth = Math.round(halfWidthNanos / nanosPerSample / OnsetDetector.HOP);
-        long from = center - halfWidth;
-        long to = center + halfWidth;
-        long oldest = Math.max(0, frames - HISTORY);
-        if (from < oldest || to >= frames) {
+        Window window = window(nanos, halfWidthNanos);
+        if (window == null) {
             return null;
         }
 
+        long oldest = oldestFrame();
         float[] rise = new float[OnsetDetector.BANDS];
         for (int band = 0; band < rise.length; band++) {
-            float window = 0;
-            for (long frame = from; frame <= to; frame++) {
-                window += bandFlux[(int) (frame % HISTORY)][band];
+            float sum = 0;
+            for (long frame = window.from(); frame <= window.to(); frame++) {
+                sum += bandFlux[slot(frame)][band];
             }
             float total = 0;
             for (long frame = oldest; frame < frames; frame++) {
-                total += bandFlux[(int) (frame % HISTORY)][band];
+                total += bandFlux[slot(frame)][band];
             }
             float average = total / (frames - oldest);
-            rise[band] = average > 0 ? window / (to - from + 1) / average : 0;
+            rise[band] = average > 0 ? sum / window.size() / average : 0;
         }
         return rise;
     }
 
     /** The average energy of each frequency band around {@code nanos}, or null if that time isn't in the history. */
     public synchronized float[] bandEnergy(long nanos, long halfWidthNanos) {
-        long center = frameAt(nanos);
-        long halfWidth = Math.round(halfWidthNanos / nanosPerSample / OnsetDetector.HOP);
-        long from = center - halfWidth;
-        long to = center + halfWidth;
-        if (from < Math.max(0, frames - HISTORY) || to >= frames) {
+        Window window = window(nanos, halfWidthNanos);
+        if (window == null) {
             return null;
         }
 
         float[] energy = new float[OnsetDetector.BANDS];
-        for (long frame = from; frame <= to; frame++) {
+        for (long frame = window.from(); frame <= window.to(); frame++) {
             for (int band = 0; band < energy.length; band++) {
-                energy[band] += bandEnergy[(int) (frame % HISTORY)][band] / (to - from + 1);
+                energy[band] += bandEnergy[slot(frame)][band] / window.size();
             }
         }
         return energy;
@@ -111,19 +111,16 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
 
     /** The average RMS level around {@code nanos}, or NaN if that time isn't in the history. */
     public synchronized float level(long nanos, long halfWidthNanos) {
-        long center = frameAt(nanos);
-        long halfWidth = Math.round(halfWidthNanos / nanosPerSample / OnsetDetector.HOP);
-        long from = center - halfWidth;
-        long to = center + halfWidth;
-        if (from < Math.max(0, frames - HISTORY) || to >= frames) {
+        Window window = window(nanos, halfWidthNanos);
+        if (window == null) {
             return Float.NaN;
         }
 
         float sum = 0;
-        for (long frame = from; frame <= to; frame++) {
-            sum += levels[(int) (frame % HISTORY)];
+        for (long frame = window.from(); frame <= window.to(); frame++) {
+            sum += levels[slot(frame)];
         }
-        return sum / (to - from + 1);
+        return sum / window.size();
     }
 
     void process(float[] block, int count, long receivedNanos) {
@@ -148,10 +145,10 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
         float flux = onsets.flux();
         synchronized (this) {
             for (int band = 0; band < OnsetDetector.BANDS; band++) {
-                bandFlux[(int) (frames % HISTORY)][band] = onsets.bandFlux(band);
-                bandEnergy[(int) (frames % HISTORY)][band] = onsets.bandEnergy(band);
+                bandFlux[slot(frames)][band] = onsets.bandFlux(band);
+                bandEnergy[slot(frames)][band] = onsets.bandEnergy(band);
             }
-            levels[(int) (frames % HISTORY)] = onsets.level();
+            levels[slot(frames)] = onsets.level();
             frames++;
         }
         tempo.add(flux);
@@ -173,5 +170,22 @@ public class MusicAnalyzer implements AudioCaptureReader.Listener {
 
     private long frameAt(long nanos) {
         return Math.round(((nanos - anchorNanos) / nanosPerSample - OnsetDetector.WINDOW / 2) / OnsetDetector.HOP);
+    }
+
+    /** The frames within {@code halfWidthNanos} of {@code nanos}, or null if any of them isn't in the history. */
+    private Window window(long nanos, long halfWidthNanos) {
+        long center = frameAt(nanos);
+        long halfWidth = Math.round(halfWidthNanos / nanosPerSample / OnsetDetector.HOP);
+        long from = center - halfWidth;
+        long to = center + halfWidth;
+        return from < oldestFrame() || to >= frames ? null : new Window(from, to);
+    }
+
+    private long oldestFrame() {
+        return Math.max(0, frames - HISTORY);
+    }
+
+    private static int slot(long frame) {
+        return (int) (frame % HISTORY);
     }
 }

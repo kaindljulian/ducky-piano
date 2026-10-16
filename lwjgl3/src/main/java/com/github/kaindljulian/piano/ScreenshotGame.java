@@ -8,7 +8,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,8 +32,6 @@ public class ScreenshotGame extends Main {
     private int nextCombo;
     private int settle = -1;
     private int pointer;
-    private Field boardField;
-    private Field comboField;
     private int jumped = -1;
 
     /** @param combos the combos to take a board screenshot at, from low to high */
@@ -57,10 +54,10 @@ public class ScreenshotGame extends Main {
                 switchTo(new GameScreen(this));
             }
         } else if (getScreen() instanceof GameScreen screen) {
-            Board board = board(screen);
+            Board board = screen.getBoard();
             play(board);
             if (jumped < nextCombo && board.getCombo() > 0) {
-                setCombo(board, combos[nextCombo] - RUN_UP);
+                board.setCombo(combos[nextCombo] - RUN_UP);
                 jumped = nextCombo;
             }
             if (settle < 0 && board.getCombo() >= combos[nextCombo]) {
@@ -95,30 +92,6 @@ public class ScreenshotGame extends Main {
             float y = board.y(tile.start);
             if (y > 0.3f) break;
             board.tap(tile.lane + 0.5f, y + 0.25f, pointer++);
-        }
-    }
-
-    private Board board(GameScreen screen) {
-        try {
-            if (boardField == null) {
-                boardField = GameScreen.class.getDeclaredField("board");
-                boardField.setAccessible(true);
-            }
-            return (Board) boardField.get(screen);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private void setCombo(Board board, int combo) {
-        try {
-            if (comboField == null) {
-                comboField = Board.class.getDeclaredField("combo");
-                comboField.setAccessible(true);
-            }
-            comboField.setInt(board, combo);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(e);
         }
     }
 

@@ -71,6 +71,21 @@ class BoardTest {
     }
 
     @Test
+    void moreRowsPerBeatSpeedUpGraduallyAndEndOnTheBeat() {
+        board.setRowsPerBeat(2);
+        float last = board.y(20);
+        for (int i = 1; i <= 200; i++) {
+            board.update(i * 0.05);
+            float y = board.y(20);
+            assertTrue(last - y > 0.05f - 1e-4f && last - y < 0.1f + 1e-4f);
+            last = y;
+        }
+
+        assertEquals(0, board.y(10), 1e-5f);
+        assertEquals(2, board.y(11), 1e-5f);
+    }
+
+    @Test
     void beatsWithoutAnOffbeatTileLeaveAnEmptyRow() {
         Board mixed = alternatingSplitBeats(2);
         mixed.update(0.75);

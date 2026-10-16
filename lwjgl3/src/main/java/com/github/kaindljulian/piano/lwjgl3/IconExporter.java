@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -214,9 +215,9 @@ public final class IconExporter {
             length += 8 + image.length;
         }
         ByteBuffer icns = ByteBuffer.allocate(length);
-        icns.put("icns".getBytes()).putInt(length);
+        icns.put("icns".getBytes(StandardCharsets.US_ASCII)).putInt(length);
         for (int i = 0; i < types.length; i++) {
-            icns.put(types[i].getBytes()).putInt(8 + images[i].length).put(images[i]);
+            icns.put(types[i].getBytes(StandardCharsets.US_ASCII)).putInt(8 + images[i].length).put(images[i]);
         }
         Files.write(path, icns.array());
     }

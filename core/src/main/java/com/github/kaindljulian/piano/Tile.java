@@ -1,8 +1,8 @@
 package com.github.kaindljulian.piano;
 
 /**
- * A black tile in one lane, hit at beat {@code start}. A plain tile is one cell tall. A hold tile is {@code length}
- * beats of connected cells and is held until its top reaches the finger.
+ * A black tile in one lane, hit at beat {@code start}. A plain tile is one row tall. A hold tile is {@code length}
+ * beats of connected rows and is held until its top reaches the finger.
  */
 public class Tile {
     public final int lane;
@@ -15,7 +15,7 @@ public class Tile {
     float heldAt;
     /** How many cells above the tile's start the finger went down. */
     float grabbedAt;
-    /** How many of the tile's cells the finger has reached. */
+    /** How many of the tile's rows the finger has reached. */
     int passed;
 
     Tile(int lane, float start, float length) {

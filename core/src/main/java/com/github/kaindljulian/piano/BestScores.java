@@ -3,6 +3,7 @@ package com.github.kaindljulian.piano;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.StringJoiner;
 
 /** The highest combos, best first. On a tie the earlier one stays ahead. Saved as text, see {@link #encode}. */
 class BestScores {
@@ -47,12 +48,9 @@ class BestScores {
 
     /** Each score as {@code time:combo}, joined by commas. */
     String encode() {
-        StringBuilder text = new StringBuilder();
+        StringJoiner text = new StringJoiner(",");
         for (Score score : scores) {
-            if (text.length() > 0) {
-                text.append(',');
-            }
-            text.append(score.time()).append(':').append(score.combo());
+            text.add(score.time() + ":" + score.combo());
         }
         return text.toString();
     }

@@ -27,12 +27,10 @@ public class GameScreen extends ScreenAdapter {
     private static final int RAINBOW_COMBO = 1000;
     /** Smaller combos break without a quack. */
     private static final int QUACK_COMBO = 30;
-    /** Each milestone up to {@link #RAINBOW_COMBO} makes the board scroll this much faster, and adds as much density. */
-    private static final float MILESTONE_SPEEDUP = 0.1f;
+    /** Tiles per beat each milestone up to {@link #RAINBOW_COMBO} adds. */
+    private static final float MILESTONE_DENSITY = 0.1f;
     /** The chart can't go denser than a tile on every 8th note. */
     private static final float MAX_DENSITY = 2;
-    /** How quickly the scroll speed eases to a new speed, as the share of the gap closed per second. */
-    private static final float SPEED_EASING = 4;
 
     private final Main game;
     private final Viewport boardViewport = new StretchViewport(LANES, VISIBLE_CELLS);
@@ -56,11 +54,6 @@ public class GameScreen extends ScreenAdapter {
     private Board board;
     private int shownCombo;
     private int boostedMilestones;
-    /**
-     * How much faster than normal the board scrolls. The tiles stay on the song's beats, so the board zooms in
-     * instead: fewer cells fit on screen and each one passes by quicker.
-     */
-    private float speed = 1;
     /** Whether Android's audio prompts are showing, which pauses the app without the player leaving. */
     private boolean requesting;
 
@@ -116,6 +109,10 @@ public class GameScreen extends ScreenAdapter {
         applyDensity();
     }
 
+    Board getBoard() {
+        return board;
+    }
+
     private Board newBoard() {
         return new Board(LANES, VISIBLE_CELLS, rowsPerBeat(), chart);
     }
@@ -162,19 +159,12 @@ public class GameScreen extends ScreenAdapter {
 
     /** Tiles per beat, going up with the combo's milestones. */
     private float density() {
-        return Math.min(1 + MILESTONE_SPEEDUP * boostedMilestones, MAX_DENSITY);
+        return Math.min(1 + MILESTONE_DENSITY * boostedMilestones, MAX_DENSITY);
     }
 
     /** Off-beat tiles need a row of their own, so any density above 1 gets a row on every 8th note. */
     private int rowsPerBeat() {
         return density() > 1 ? 2 : 1;
-    }
-
-    private void updateSpeed(float delta) {
-        float target = 1 + MILESTONE_SPEEDUP * boostedMilestones;
-        speed += (target - speed) * Math.min(delta * SPEED_EASING, 1);
-        boardViewport.setWorldHeight(VISIBLE_CELLS / speed);
-        boardViewport.update(boardViewport.getScreenWidth(), boardViewport.getScreenHeight(), true);
     }
 
     private String densityText() {
@@ -285,7 +275,6 @@ public class GameScreen extends ScreenAdapter {
         updateCombo();
         listening.setVisible(beat == null && !menu.isVisible());
         bpm.setText(beat == null ? "" : Math.round(60e9 / beat.periodNanos()) + " BPM");
-        updateSpeed(delta);
         renderer.render(board, boardViewport, board.getCombo() >= RAINBOW_COMBO);
 
         stage.getViewport().apply();

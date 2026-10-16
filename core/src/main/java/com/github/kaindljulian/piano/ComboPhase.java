@@ -9,6 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Pool;
 
 /**
  * The combo text on a rainbow combo: it runs through the rainbow with afterimages in the colors ahead of it trailing
@@ -26,19 +27,30 @@ class ComboPhase extends Actor {
     /** How far beside and above the text lines can start, in virtual pixels. */
     private static final float LINE_MARGIN = 30;
 
-    private static class Line {
+    private static class Line implements Pool.Poolable {
         float x;
         float y;
         float length;
         float speed;
         float age;
         float life;
+
+        @Override
+        public void reset() {
+            age = 0;
+        }
     }
 
     private final Label text;
     private final Label[] ghosts = new Label[GHOSTS];
     private final Texture circle;
     private final Array<Line> lines = new Array<>(false, 32);
+    private final Pool<Line> pool = new Pool<>() {
+        @Override
+        protected Line newObject() {
+            return new Line();
+        }
+    };
     private final Color color = new Color();
     private final Vector2 corner = new Vector2();
     private final Vector2 opposite = new Vector2();
@@ -67,17 +79,18 @@ class ComboPhase extends Actor {
             line.age += delta;
             line.y -= line.speed * delta;
             if (line.age >= line.life) {
-                lines.removeIndex(i);
+                pool.free(lines.removeIndex(i));
             }
         }
         if (!isVisible()) {
+            pool.freeAll(lines);
             lines.clear();
             return;
         }
         text.localToStageCoordinates(corner.set(0, 0));
         text.localToStageCoordinates(opposite.set(text.getWidth(), text.getHeight()));
         for (lineDue += delta * LINES_PER_SECOND; lineDue >= 1; lineDue--) {
-            Line line = new Line();
+            Line line = pool.obtain();
             line.x = MathUtils.random(corner.x - LINE_MARGIN, opposite.x + LINE_MARGIN);
             line.y = MathUtils.random(corner.y, opposite.y + LINE_MARGIN);
             line.length = MathUtils.random(Sizes.SPEED_LINE_MIN, Sizes.SPEED_LINE_MAX);

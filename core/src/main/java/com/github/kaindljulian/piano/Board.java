@@ -7,18 +7,32 @@ import com.badlogic.gdx.utils.IntMap;
 
 import java.util.Arrays;
 
-
 /**
  * Tiles on a grid of rows one cell tall, scrolling {@link #setRowsPerBeat rows per beat}. With two rows per beat a
  * beat without an off-beat tile leaves its second row empty. Plain tiles fill one row. Hold tiles are a run of
  * connected rows that the finger goes down in the first of and comes up in the last of, and every row it is dragged
  * through counts as a hit.
+ * <p>
+ * A change of rows per beat changes how fast the board scrolls. The board eases into the new speed, so for a few
+ * beats around the change it runs a little ahead of or behind the music.
  */
 public class Board {
     public enum State { READY, RUNNING }
 
     /** A tile {@code offset} beats into its beat. A {@code length} above 0 makes it a hold tile that many beats long. */
     public record Note(int lane, float offset, float length) {
+    }
+
+    /**
+     * Spreads a change of {@code rows} per beat at {@code beat} over {@code half} beats either side of it. The speed
+     * changes evenly across that span, so the board drifts off the beat and is back on it once the span is over.
+     */
+    private record Ramp(int beat, float half, int rows) {
+        /** How many cells the board is ahead of the beat at a scroll position. */
+        float offset(float scroll) {
+            float left = half - Math.abs(scroll - beat);
+            return left > 0 ? rows * left * left / (4 * half) : 0;
+        }
     }
 
     public interface Chart {
@@ -36,6 +50,8 @@ public class Board {
     private int nextBeat;
     /** The cell each spawned beat starts on, plus where the next one will. */
     private final FloatArray beatCells = FloatArray.with(0);
+    private final Array<Ramp> ramps = new Array<>();
+    private int lastRows;
     private float scroll;
     private double origin;
     private boolean aligned;
@@ -48,6 +64,7 @@ public class Board {
         this.lanes = lanes;
         this.visibleCells = visibleCells;
         this.rowsPerBeat = rowsPerBeat;
+        lastRows = rowsPerBeat;
         this.chart = chart;
         spawn();
     }
@@ -60,6 +77,13 @@ public class Board {
             aligned = true;
         }
         scroll = (float) (beats - origin);
+        for (int i = ramps.size - 1; i >= 0; i--) {
+            Ramp ramp = ramps.get(i);
+            if (scroll >= ramp.beat() + ramp.half()) {
+                ramps.removeIndex(i);
+            }
+        }
+        float bottom = bottom();
 
         IntMap.Values<Tile> held = heldByPointer.values();
         while (held.hasNext()) {
@@ -71,13 +95,13 @@ public class Board {
         }
         for (int i = tiles.size - 1; i >= 0; i--) {
             Tile tile = tiles.get(i);
-            if (end(tile) >= scroll) continue;
+            if (cell(end(tile)) >= bottom) continue;
             tiles.removeIndex(i);
             if (!tile.tapped && !tile.missed) {
                 combo = 0;
             }
         }
-        if (wrongTap != null && end(wrongTap) < scroll) {
+        if (wrongTap != null && cell(end(wrongTap)) < bottom) {
             wrongTap = null;
         }
         spawn();
@@ -95,7 +119,7 @@ public class Board {
     public void tap(float x, float y, int pointer) {
         if (x < 0 || x >= lanes) return;
         int lane = (int) x;
-        float tapCell = cell(scroll) + y;
+        float tapCell = bottom() + y;
         float position = beatAt(tapCell);
 
         Tile hit = tileAt(lane, position);
@@ -159,7 +183,7 @@ public class Board {
 
     /** How many cells above the screen bottom a beat count is. */
     public float y(float beat) {
-        return cell(beat) - cell(scroll);
+        return cell(beat) - bottom();
     }
 
     public State getState() {
@@ -169,6 +193,10 @@ public class Board {
     /** Hits in a row since the last missed tile or tap on an empty cell. */
     public int getCombo() {
         return combo;
+    }
+
+    void setCombo(int combo) {
+        this.combo = combo;
     }
 
     /** The empty cell the player last tapped, until it scrolls off. */
@@ -185,7 +213,7 @@ public class Board {
 
     /** Counts a hit for each row of a held tile the finger reached since last time, and returns the finger's cell. */
     private float drag(Tile tile) {
-        float finger = cell(scroll) + tile.heldAt;
+        float finger = bottom() + tile.heldAt;
         float bottom = cell(tile.start);
         int rows = Math.round(cell(tile.start + tile.length) - bottom);
         int reached = Math.min(MathUtils.floor(finger - bottom) + 1, rows);
@@ -196,6 +224,15 @@ public class Board {
 
     private float end(Tile tile) {
         return tile.isHold() ? tile.start + tile.length : beatAt(cell(tile.start) + 1);
+    }
+
+    /** The cell at the screen bottom. */
+    private float bottom() {
+        float bottom = cell(scroll);
+        for (Ramp ramp : ramps) {
+            bottom += ramp.offset(scroll);
+        }
+        return bottom;
     }
 
     /** The cell a beat count falls on. Outside the spawned beats, each beat has the current rows per beat. */
@@ -230,7 +267,7 @@ public class Board {
 
     /** Keeps the board filled one beat past the top edge, so tiles never pop in on screen. */
     private void spawn() {
-        while (beatCells.peek() <= cell(scroll) + visibleCells) {
+        while (beatCells.peek() <= bottom() + visibleCells) {
             int rows = rowsPerBeat;
             for (Note note : chart.notes(nextBeat - scroll)) {
                 tiles.add(new Tile(note.lane(), nextBeat + note.offset(), note.length()));
@@ -238,6 +275,11 @@ public class Board {
                 if (note.offset() > 0) {
                     rows = 2;
                 }
+            }
+            // The ramp starts right away, before the beat comes into view.
+            if (rows != lastRows) {
+                ramps.add(new Ramp(nextBeat, nextBeat - scroll, rows - lastRows));
+                lastRows = rows;
             }
             beatCells.add(beatCells.peek() + rows);
             nextBeat++;

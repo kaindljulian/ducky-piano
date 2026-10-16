@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Pool;
 
 /**
  * Sparkles and little ducks falling out of the combo text. The level is the combo in hundreds. Every new level bursts,
@@ -39,7 +40,7 @@ class ComboTrail extends Actor {
         SPARKLE, DUCK, FLAME
     }
 
-    private static class Particle {
+    private static class Particle implements Pool.Poolable {
         Kind kind;
         float x;
         float y;
@@ -51,7 +52,15 @@ class ComboTrail extends Actor {
         float age;
         float life;
         boolean flip;
-        Color color;
+        final Color color = new Color();
+
+        @Override
+        public void reset() {
+            rotation = 0;
+            spin = 0;
+            age = 0;
+            flip = false;
+        }
     }
 
     private final Actor text;
@@ -59,6 +68,12 @@ class ComboTrail extends Actor {
     private final Texture[] duckParts;
     private final Color[] duckColors;
     private final Array<Particle> particles = new Array<>(false, 256);
+    private final Pool<Particle> pool = new Pool<>() {
+        @Override
+        protected Particle newObject() {
+            return new Particle();
+        }
+    };
     private final Vector2 corner = new Vector2();
     private final Vector2 opposite = new Vector2();
     private final Color tint = new Color();
@@ -98,6 +113,7 @@ class ComboTrail extends Actor {
     }
 
     void clearParticles() {
+        pool.freeAll(particles);
         particles.clear();
     }
 
@@ -151,7 +167,7 @@ class ComboTrail extends Actor {
             p.y += p.vy * delta;
             p.rotation += p.spin * delta;
             if (p.age >= p.life || p.y < floor) {
-                particles.removeIndex(i);
+                pool.free(particles.removeIndex(i));
             }
         }
     }
@@ -161,7 +177,7 @@ class ComboTrail extends Actor {
         text.localToStageCoordinates(opposite.set(text.getWidth(), text.getHeight()));
         float width = opposite.x - corner.x;
         float height = opposite.y - corner.y;
-        Particle p = new Particle();
+        Particle p = pool.obtain();
         p.kind = kind;
         p.x = corner.x + MathUtils.random(0.1f, 0.9f) * width;
         p.vx = MathUtils.random(-30f, 30f);
@@ -178,7 +194,7 @@ class ComboTrail extends Actor {
                 p.y = corner.y + MathUtils.random(0.2f, 0.5f) * height;
                 p.vy = MathUtils.random(-40f, 20f);
                 p.size = MathUtils.random(Sizes.SPARKLE_MIN, Sizes.SPARKLE_MAX);
-                p.color = MathUtils.randomBoolean(0.3f) ? Colors.SPARKLE : new Color(color);
+                p.color.set(MathUtils.randomBoolean(0.3f) ? Colors.SPARKLE : color);
                 p.life = MathUtils.random(0.8f, 1.6f);
                 break;
             case FLAME:

@@ -18,7 +18,7 @@ import com.github.kaindljulian.piano.R;
 import java.util.Objects;
 
 /**
- * The foreground service Android requires while an app holds the {@link MediaProjection} isntance.
+ * The foreground service Android requires while an app holds the {@link MediaProjection} instance.
  * {@link PlaybackCaptureRequest} starts it, and it stops itself when the projection stops.
  */
 public class PlaybackCaptureService extends Service {

@@ -4,8 +4,12 @@ import com.github.kaindljulian.piano.Board;
 import com.github.kaindljulian.piano.Board.Note;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Queue;
+import java.util.stream.IntStream;
 
 /**
  * Builds the chart from the music, one bar at a time. A bar's beats haven't been heard yet when it's planned, but
@@ -70,7 +74,7 @@ public class ChartGenerator implements Board.Chart {
     @Override
     public Note[] notes(double beatsAhead) {
         if (planned.isEmpty()) {
-            planned.addAll(Arrays.asList(plan(sound(beatsAhead, System.nanoTime()))));
+            Collections.addAll(planned, plan(sound(beatsAhead, System.nanoTime())));
         }
         return planned.remove();
     }
@@ -80,15 +84,14 @@ public class ChartGenerator implements Board.Chart {
         Bar bar = sound == null ? guess() : listen(sound);
         Note[][] beats = new Note[BEATS_PER_BAR][];
         for (int beat = 0; beat < BEATS_PER_BAR; beat++) {
-            Note[] notes = new Note[0];
+            List<Note> notes = new ArrayList<>();
             for (int slot = 2 * beat; slot < 2 * beat + 2; slot++) {
                 if (bar.lanes()[slot] != NO_NOTE) {
-                    notes = Arrays.copyOf(notes, notes.length + 1);
-                    notes[notes.length - 1] = new Note(bar.lanes()[slot], slot % 2 / 2f, bar.lengths()[slot]);
+                    notes.add(new Note(bar.lanes()[slot], slot % 2 / 2f, bar.lengths()[slot]));
                     lastLane = bar.lanes()[slot];
                 }
             }
-            beats[beat] = notes;
+            beats[beat] = notes.toArray(new Note[0]);
         }
         for (int from = 0; from < SLOTS; from += SLOTS_PER_PATTERN) {
             int[] pattern = pattern(bar.lanes(), from);
@@ -265,13 +268,9 @@ public class ChartGenerator implements Board.Chart {
         int previousLane = lastLane;
         int previousHalf = lastHalf;
         for (int from = 0; from < SLOTS; from += SLOTS_PER_PATTERN) {
-            int[] slots = new int[0];
-            for (int slot = from; slot < from + SLOTS_PER_PATTERN; slot++) {
-                if (lengths[slot] != NO_NOTE) {
-                    slots = Arrays.copyOf(slots, slots.length + 1);
-                    slots[slots.length - 1] = slot;
-                }
-            }
+            int[] slots = IntStream.range(from, from + SLOTS_PER_PATTERN)
+                .filter(slot -> lengths[slot] != NO_NOTE)
+                .toArray();
             if (slots.length == 0) {
                 continue;
             }
@@ -296,14 +295,10 @@ public class ChartGenerator implements Board.Chart {
 
     /** The lanes of the notes in the pattern starting at slot {@code from}. */
     private static int[] pattern(int[] lanes, int from) {
-        int[] pattern = new int[0];
-        for (int slot = from; slot < from + SLOTS_PER_PATTERN; slot++) {
-            if (lanes[slot] != NO_NOTE) {
-                pattern = Arrays.copyOf(pattern, pattern.length + 1);
-                pattern[pattern.length - 1] = lanes[slot];
-            }
-        }
-        return pattern;
+        return IntStream.range(from, from + SLOTS_PER_PATTERN)
+            .map(slot -> lanes[slot])
+            .filter(lane -> lane != NO_NOTE)
+            .toArray();
     }
 
     /** The rises of the whole bar as one vector with mean 0 and length 1, so a dot product is the correlation. */
@@ -327,7 +322,6 @@ public class ChartGenerator implements Board.Chart {
         }
         return features;
     }
-
 
     private static int loudestBand(float[] rise) {
         int loudest = 0;

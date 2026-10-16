@@ -1,22 +1,18 @@
 package com.github.kaindljulian.piano;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.ScreenUtils;
 
 /**
  * Explains why the game listens to other apps before the system asks, and what to do if the player says no.
  */
-public class ListenScreen extends ScreenAdapter {
+public class ListenScreen extends MenuScreen {
     private static final String EXPLANATION =
             """
                     Ducky Piano listens to the music playing on your phone to make matching tiles. \
@@ -31,12 +27,12 @@ public class ListenScreen extends ScreenAdapter {
                     If Android doesn't ask again, allow the microphone for Ducky Piano in your phone's settings.""";
     private static final String PRIVACY_POLICY = "https://kaindljulian.github.io/ducky-piano/privacy.html";
 
-    private final Stage stage = Ui.createStage();
     private final Table message = new Table();
     private final Skin skin;
 
     /** @param denied whether the player just said no to Android's prompts */
     ListenScreen(Main game, boolean denied) {
+        super(game);
         skin = game.skin;
         showMessage(denied ? DENIED : EXPLANATION);
 
@@ -60,7 +56,6 @@ public class ListenScreen extends ScreenAdapter {
         });
         TextButton back = new TextButton("Back", skin);
         Ui.onClick(back, () -> game.switchTo(new StartScreen(game)));
-        Ui.onBack(stage, () -> game.switchTo(new StartScreen(game)));
 
         Table root = new Table();
         root.setFillParent(true);
@@ -82,34 +77,5 @@ public class ListenScreen extends ScreenAdapter {
             label.setAlignment(Align.left);
             message.add(label).growX().padBottom(Sizes.PARAGRAPH_GAP).row();
         }
-    }
-
-    @Override
-    public void show() {
-        Gdx.input.setInputProcessor(stage);
-        Gdx.input.setCatchKey(Input.Keys.BACK, true);
-    }
-
-    @Override
-    public void render(float delta) {
-        ScreenUtils.clear(Colors.BACKGROUND_TOP);
-        stage.getViewport().apply();
-        stage.act(delta);
-        stage.draw();
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        stage.getViewport().update(width, height, true);
-    }
-
-    @Override
-    public void hide() {
-        dispose();
-    }
-
-    @Override
-    public void dispose() {
-        stage.dispose();
     }
 }
